@@ -1,0 +1,8 @@
+﻿node_modules/
+dist/
+.env
+.env.local
+*.tsbuildinfo
+generated/crm-runs/
+coverage/
+.DS_Store

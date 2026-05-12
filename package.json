@@ -1,0 +1,22 @@
+﻿{
+  "name": "crm-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "crm:generate": "tsx src/cli.ts generate",
+    "crm:validate": "tsx src/cli.ts validate",
+    "crm:seed:local": "tsx src/cli.ts seed-local",
+    "crm:push:pipedrive": "tsx src/cli.ts push-pipedrive",
+    "crm:advance": "tsx src/cli.ts advance",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.0"
+  }
+}
