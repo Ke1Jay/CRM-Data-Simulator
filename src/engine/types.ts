@@ -5,6 +5,17 @@ export type CurrencyCode = "EUR" | "USD" | "GBP";
 export type DealStatus = "OPEN" | "WON" | "LOST" | "DELETED";
 export type LeadStatus = "NEW" | "QUALIFIED" | "UNQUALIFIED" | "CONVERTED";
 export type ActivityType = "call" | "email" | "meeting" | "task" | "deadline";
+export type ActivityMoment =
+  | "discovery"
+  | "process_mapping"
+  | "data_quality_review"
+  | "pilot_scope"
+  | "finance_review"
+  | "security_review"
+  | "ghosting_nudge"
+  | "pilot_success"
+  | "close_confirmation"
+  | "loss_review";
 export type InsightType = "DEAL_COLD" | "PIPELINE_DIGEST" | "WIN_RATE_SHIFT" | "ACTIVITY_GAP" | "STALLED_DEAL";
 export type Severity = "INFO" | "WARNING" | "CRITICAL";
 export type ValidationSeverity = "fatal" | "warning" | "info";
@@ -12,8 +23,19 @@ export type ValidationSeverity = "fatal" | "warning" | "info";
 export type BuyingStyle = "founder-led" | "committee" | "procurement-heavy" | "champion-led";
 export type RepBehavior = "diligent" | "overloaded" | "inconsistent" | "strong-closer" | "weak-follow-up";
 export type CommunicationStyle = "direct" | "analytical" | "warm" | "skeptical" | "busy";
+export type ContactPersonality = "pragmatic" | "curious" | "risk-averse" | "time-poor" | "political" | "enthusiastic";
 export type Seniority = "executive" | "director" | "manager" | "individual-contributor";
 export type InfluenceLevel = "economic-buyer" | "champion" | "evaluator" | "blocker" | "user";
+export type BuyingCommitteeRole =
+  | "primary-buyer"
+  | "executive-sponsor"
+  | "champion"
+  | "finance-approver"
+  | "technical-evaluator"
+  | "crm-admin"
+  | "legal-security"
+  | "end-user"
+  | "blocker";
 
 export type ScenarioConfig = {
   id: string;
@@ -116,6 +138,8 @@ export type OrganizationStory = {
   crmHygiene: "clean" | "average" | "messy";
   buyingStyle: BuyingStyle;
   pains: string[];
+  buyingTrigger: string;
+  decisionPressure: string;
 };
 
 export type Organization = EntityBase & {
@@ -134,7 +158,11 @@ export type Contact = EntityBase & {
   role: string;
   seniority: Seniority;
   influence: InfluenceLevel;
+  committeeRole: BuyingCommitteeRole;
   communicationStyle: CommunicationStyle;
+  personality: ContactPersonality;
+  priorities: string[];
+  likelyObjections: string[];
   responsiveness: number;
   sentimentBias: number;
 };
@@ -190,10 +218,27 @@ export type DealStory = {
   knownObjections: string[];
   winCondition: string;
   riskFactors: string[];
+  decisionProcess: string;
+  stakeholders: DealStakeholder[];
+  sentimentArc: SentimentMoment[];
+};
+
+export type DealStakeholder = {
+  contactId: CanonicalId;
+  role: BuyingCommitteeRole;
+  label: string;
+};
+
+export type SentimentMoment = {
+  occurredAt: ISODateString;
+  contactId: CanonicalId;
+  trigger: string;
+  buyerState: BuyerState;
 };
 
 export type Activity = EntityBase & {
   type: ActivityType;
+  moment: ActivityMoment;
   subject: string;
   description?: string;
   done: boolean;

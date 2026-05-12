@@ -4,7 +4,7 @@ export const singleOrganizationDealLabScenario: ScenarioConfig = {
   id: "single-organization-deal-lab",
   name: "Single Organization Deal Lab",
   description:
-    "A compact inspection scenario with one account, many stakeholders, several leads and deals, and enough activity history to manually review story continuity.",
+    "A compact SMB SaaS inspection scenario with one account, a real buying committee, one active opportunity, and enough history to manually review story continuity.",
   version: "0.1.0",
   defaults: {
     currency: "EUR",
@@ -15,15 +15,15 @@ export const singleOrganizationDealLabScenario: ScenarioConfig = {
     reps: 1,
     organizations: 1,
     contactsPerOrganization: { min: 9, max: 9 },
-    leads: 10,
-    deals: 8,
-    activitiesPerDeal: { min: 4, max: 7 },
+    leads: 5,
+    deals: 3,
+    activitiesPerDeal: { min: 7, max: 10 },
   },
   targets: {
     minColdDeals: 1,
     minStalledDeals: 1,
-    minClosedDeals: 3,
-    winRate: { min: 0.3, max: 0.45 },
+    minClosedDeals: 2,
+    winRate: { min: 0.45, max: 0.55 },
   },
   pipeline: {
     name: "Sales Pipeline",

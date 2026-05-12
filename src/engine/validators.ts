@@ -1,10 +1,7 @@
 ﻿import type {
-  Activity,
   CanonicalId,
-  Contact,
   Deal,
   GeneratedWorld,
-  Lead,
   SimulationEvent,
   ValidationIssue,
   ValidationReport,
@@ -171,6 +168,48 @@ function validateActivities(
   return issues;
 }
 
+function validateNotes(
+  world: GeneratedWorld,
+  dealIds: Set<CanonicalId>,
+  contactIds: Set<CanonicalId>,
+  orgIds: Set<CanonicalId>,
+  repIds: Set<CanonicalId>,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  for (const note of world.notes) {
+    if (note.dealId && !dealIds.has(note.dealId)) issues.push(missingReference("note", note, "dealId", note.dealId));
+    if (note.contactId && !contactIds.has(note.contactId)) issues.push(missingReference("note", note, "contactId", note.contactId));
+    if (note.organizationId && !orgIds.has(note.organizationId)) issues.push(missingReference("note", note, "organizationId", note.organizationId));
+    if (!repIds.has(note.ownerId)) issues.push(missingReference("note", note, "ownerId", note.ownerId));
+
+    validateDateRange(issues, "note", note, note.createdAt, world);
+    validateDateRange(issues, "note", note, note.updatedAt, world, "updatedAt");
+  }
+
+  return issues;
+}
+
+function validateEmails(
+  world: GeneratedWorld,
+  dealIds: Set<CanonicalId>,
+  contactIds: Set<CanonicalId>,
+  repIds: Set<CanonicalId>,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  for (const email of world.emails) {
+    if (email.dealId && !dealIds.has(email.dealId)) issues.push(missingReference("email", email, "dealId", email.dealId));
+    if (!contactIds.has(email.contactId)) issues.push(missingReference("email", email, "contactId", email.contactId));
+    if (!repIds.has(email.ownerId)) issues.push(missingReference("email", email, "ownerId", email.ownerId));
+
+    validateDateRange(issues, "email", email, email.createdAt, world);
+    validateDateRange(issues, "email", email, email.updatedAt, world, "updatedAt");
+  }
+
+  return issues;
+}
+
 function validateEvents(world: GeneratedWorld, events: readonly SimulationEvent[]): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const entityIds = new Set<CanonicalId>([
@@ -202,6 +241,112 @@ function validateEvents(world: GeneratedWorld, events: readonly SimulationEvent[
     }
 
     validateDateRange(issues, "event", event, event.occurredAt, world, "occurredAt");
+  }
+
+  return issues;
+}
+
+function beforeIssue(entityType: string, entityId: CanonicalId, path: string, parentType: string): ValidationIssue {
+  return {
+    severity: "fatal",
+    code: "date_before_parent_created",
+    message: `${entityType} ${entityId} has ${path} before linked ${parentType} was created`,
+    entityType,
+    entityId,
+    path,
+  };
+}
+
+function validateTemporalConsistency(world: GeneratedWorld): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const orgById = new Map(world.organizations.map((item) => [item.id, item]));
+  const contactById = new Map(world.contacts.map((item) => [item.id, item]));
+  const leadById = new Map(world.leads.map((item) => [item.id, item]));
+  const dealById = new Map(world.deals.map((item) => [item.id, item]));
+  const dealsBySourceLead = new Map<CanonicalId, Deal[]>();
+
+  for (const lead of world.leads) {
+    const organization = orgById.get(lead.organizationId);
+    const contact = contactById.get(lead.contactId);
+
+    if (organization && lead.createdAt < organization.createdAt) issues.push(beforeIssue("lead", lead.id, "createdAt", "organization"));
+    if (contact && lead.createdAt < contact.createdAt) issues.push(beforeIssue("lead", lead.id, "createdAt", "contact"));
+  }
+
+  for (const deal of world.deals) {
+    const organization = orgById.get(deal.organizationId);
+    const contact = contactById.get(deal.contactId);
+    const sourceLead = deal.sourceLeadId ? leadById.get(deal.sourceLeadId) : undefined;
+
+    if (organization && deal.createdAt < organization.createdAt) issues.push(beforeIssue("deal", deal.id, "createdAt", "organization"));
+    if (contact && deal.createdAt < contact.createdAt) issues.push(beforeIssue("deal", deal.id, "createdAt", "contact"));
+    if (sourceLead && deal.createdAt < sourceLead.createdAt) issues.push(beforeIssue("deal", deal.id, "createdAt", "lead"));
+
+    if (deal.sourceLeadId) {
+      dealsBySourceLead.set(deal.sourceLeadId, [...(dealsBySourceLead.get(deal.sourceLeadId) ?? []), deal]);
+
+      if (sourceLead?.convertedDealId !== deal.id) {
+        issues.push({
+          severity: "fatal",
+          code: "lead_deal_conversion_mismatch",
+          message: `Deal ${deal.id} sourceLeadId does not match the lead convertedDealId`,
+          entityType: "deal",
+          entityId: deal.id,
+          path: "sourceLeadId",
+        });
+      }
+    }
+  }
+
+  for (const [leadId, deals] of dealsBySourceLead) {
+    if (deals.length > 1) {
+      issues.push({
+        severity: "fatal",
+        code: "lead_converted_to_multiple_deals",
+        message: `Lead ${leadId} is used as source for multiple deals: ${deals.map((deal) => deal.id).join(", ")}`,
+        entityType: "lead",
+        entityId: leadId,
+        path: "convertedDealId",
+      });
+    }
+  }
+
+  for (const activity of world.activities) {
+    const deal = activity.dealId ? dealById.get(activity.dealId) : undefined;
+    const contact = activity.contactId ? contactById.get(activity.contactId) : undefined;
+    const closeTime = deal?.wonTime ?? deal?.lostTime;
+
+    if (deal && activity.dueDate < deal.createdAt) issues.push(beforeIssue("activity", activity.id, "dueDate", "deal"));
+    if (contact && activity.dueDate < contact.createdAt) issues.push(beforeIssue("activity", activity.id, "dueDate", "contact"));
+
+    if (closeTime && activity.dueDate > closeTime) {
+      issues.push({
+        severity: "fatal",
+        code: "activity_after_deal_closed",
+        message: `Activity ${activity.id} is scheduled after linked deal ${deal?.id} closed`,
+        entityType: "activity",
+        entityId: activity.id,
+        path: "dueDate",
+      });
+    }
+  }
+
+  for (const note of world.notes) {
+    const deal = note.dealId ? dealById.get(note.dealId) : undefined;
+    const contact = note.contactId ? contactById.get(note.contactId) : undefined;
+    const organization = note.organizationId ? orgById.get(note.organizationId) : undefined;
+
+    if (deal && note.createdAt < deal.createdAt) issues.push(beforeIssue("note", note.id, "createdAt", "deal"));
+    if (contact && note.createdAt < contact.createdAt) issues.push(beforeIssue("note", note.id, "createdAt", "contact"));
+    if (organization && note.createdAt < organization.createdAt) issues.push(beforeIssue("note", note.id, "createdAt", "organization"));
+  }
+
+  for (const email of world.emails) {
+    const deal = email.dealId ? dealById.get(email.dealId) : undefined;
+    const contact = contactById.get(email.contactId);
+
+    if (deal && email.createdAt < deal.createdAt) issues.push(beforeIssue("email", email.id, "createdAt", "deal"));
+    if (contact && email.createdAt < contact.createdAt) issues.push(beforeIssue("email", email.id, "createdAt", "contact"));
   }
 
   return issues;
@@ -261,6 +406,9 @@ export function validateWorld(world: GeneratedWorld, events: readonly Simulation
     ...validateLeads(world, orgIds, contactIds, repIds),
     ...validateDeals(world, orgIds, contactIds, repIds, stageIds),
     ...validateActivities(world, dealIds, contactIds, repIds),
+    ...validateNotes(world, dealIds, contactIds, orgIds, repIds),
+    ...validateEmails(world, dealIds, contactIds, repIds),
+    ...validateTemporalConsistency(world),
     ...validateEvents(world, events),
   ];
 
