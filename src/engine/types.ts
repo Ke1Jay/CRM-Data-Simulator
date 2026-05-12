@@ -195,6 +195,7 @@ export type DealStory = {
 export type Activity = EntityBase & {
   type: ActivityType;
   subject: string;
+  description?: string;
   done: boolean;
   dueDate: ISODateString;
   dueTime?: string;

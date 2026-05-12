@@ -374,14 +374,14 @@ Goal: make CRM activity text feel human without letting AI alter facts.
 
 ### 5.1 Template Renderer
 
-- [ ] Create deterministic fallback templates for emails
-- [ ] Create deterministic fallback templates for call notes
-- [ ] Create deterministic fallback templates for meeting notes
+- [x] Create deterministic fallback templates for emails
+- [x] Create deterministic fallback templates for call notes
+- [x] Create deterministic fallback templates for meeting notes
 - [ ] Create deterministic fallback templates for lost reason notes
 
 Definition of done:
 
-- [ ] Simulator works with zero LLM cost
+- [x] Simulator works with zero LLM cost
 
 ### 5.2 AI Renderer Contract
 
@@ -423,7 +423,7 @@ Definition of done:
 
 Definition of done:
 
-- [ ] Notes and emails differ by buyer state and scenario
+- [x] Notes and emails differ by buyer state and scenario
 
 ---
 
@@ -582,13 +582,13 @@ This is the smallest useful version we should build first.
 - [x] Implement deterministic RNG
 - [x] Implement core types
 - [x] Implement one scenario config placeholder: `stale-pipeline-hidden-risk`
-- [ ] Generate reps, organizations, contacts, leads, deals, and activities
-- [ ] Generate event ledger
-- [ ] Generate sentiment and engagement state
-- [ ] Generate `world.json`
-- [ ] Generate `events.json`
-- [ ] Generate `truth.json`
-- [ ] Generate `validation-report.json`
+- [x] Generate reps, organizations, contacts, leads, deals, and activities
+- [x] Generate event ledger
+- [x] Generate sentiment and engagement state
+- [x] Generate `world.json`
+- [x] Generate `events.json`
+- [x] Generate `truth.json`
+- [x] Generate `validation-report.json`
 - [ ] Add local Prisma adapter
 - [x] Add package scripts
 - [ ] Run local seed
@@ -596,16 +596,16 @@ This is the smallest useful version we should build first.
 
 MVP acceptance criteria:
 
-- [ ] 80+ organizations
-- [ ] 150+ contacts
-- [ ] 200+ leads/deals combined
-- [ ] 700+ activities
-- [ ] 5+ reps with visibly different behavior
-- [ ] At least 10 cold deals
-- [ ] At least 8 stalled deals
-- [ ] At least 30 closed won/lost deals
-- [ ] Validation report has zero fatal errors
-- [ ] Truth report lists expected cold deals, stalled deals, top reps, win rates, and pipeline value by stage
+- [x] 80+ organizations
+- [x] 150+ contacts
+- [x] 200+ leads/deals combined
+- [x] 700+ activities
+- [x] 5+ reps with visibly different behavior
+- [x] At least 10 cold deals
+- [x] At least 8 stalled deals
+- [x] At least 30 closed won/lost deals
+- [x] Validation report has zero fatal errors
+- [x] Truth report lists expected cold deals, stalled deals, top reps, win rates, and pipeline value by stage
 - [ ] MorrAI dashboard looks credible
 - [ ] MorrAI chat can answer at least five truth-backed questions
 
@@ -627,13 +627,13 @@ MVP acceptance criteria:
 
 ### Task B - Implement Deterministic World Generation
 
-- [ ] Generate reps
-- [ ] Generate organizations
-- [ ] Generate contacts
-- [ ] Generate leads
-- [ ] Generate deals
-- [ ] Generate activities
-- [ ] Emit `world.json`
+- [x] Generate reps
+- [x] Generate organizations
+- [x] Generate contacts
+- [x] Generate leads
+- [x] Generate deals
+- [x] Generate activities
+- [x] Emit `world.json`
 
 ### Task C - Add Event Ledger And State Machine
 
@@ -644,10 +644,10 @@ MVP acceptance criteria:
 
 ### Task D - Add Validation And Truth Report
 
-- [ ] Implement fatal validators
+- [x] Implement fatal validators
 - [ ] Implement warnings
-- [ ] Emit validation report
-- [ ] Emit truth report
+- [x] Emit validation report
+- [x] Emit truth report
 
 ### Task E - Seed Local Prisma
 
