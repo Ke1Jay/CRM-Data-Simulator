@@ -81,6 +81,28 @@ function validateLeads(
     validateDateRange(issues, "lead", lead, lead.expectedCloseDate, world, "expectedCloseDate");
     validateDateRange(issues, "lead", lead, lead.lastActivityDate, world, "lastActivityDate");
     validateDateRange(issues, "lead", lead, lead.nextActivityDate, world, "nextActivityDate");
+
+    if (lead.status === "CONVERTED" && !lead.story.conversionRationale) {
+      issues.push({
+        severity: "warning",
+        code: "converted_lead_missing_rationale",
+        message: `Converted lead ${lead.id} is missing a conversion rationale`,
+        entityType: "lead",
+        entityId: lead.id,
+        path: "story.conversionRationale",
+      });
+    }
+
+    if (lead.status === "UNQUALIFIED" && !lead.story.disqualificationReason) {
+      issues.push({
+        severity: "warning",
+        code: "unqualified_lead_missing_reason",
+        message: `Unqualified lead ${lead.id} is missing a disqualification reason`,
+        entityType: "lead",
+        entityId: lead.id,
+        path: "story.disqualificationReason",
+      });
+    }
   }
 
   return issues;
@@ -197,14 +219,238 @@ function validateEmails(
   repIds: Set<CanonicalId>,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+  const contactById = new Map(world.contacts.map((contact) => [contact.id, contact]));
 
   for (const email of world.emails) {
     if (email.dealId && !dealIds.has(email.dealId)) issues.push(missingReference("email", email, "dealId", email.dealId));
     if (!contactIds.has(email.contactId)) issues.push(missingReference("email", email, "contactId", email.contactId));
     if (!repIds.has(email.ownerId)) issues.push(missingReference("email", email, "ownerId", email.ownerId));
+    if (contactById.get(email.contactId) && !contactById.get(email.contactId)?.email) {
+      issues.push({
+        severity: "fatal",
+        code: "email_contact_missing_address",
+        message: `Email ${email.id} is linked to contact ${email.contactId}, but that contact has no email address`,
+        entityType: "email",
+        entityId: email.id,
+        path: "contactId",
+      });
+    }
 
     validateDateRange(issues, "email", email, email.createdAt, world);
     validateDateRange(issues, "email", email, email.updatedAt, world, "updatedAt");
+  }
+
+  return issues;
+}
+
+function validateScenarioPremise(world: GeneratedWorld): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const scenarioId = world.metadata.scenarioId;
+
+  if (scenarioId === "ghosted-high-value-opportunity") {
+    // Premise: at least one HIGH-VALUE OPEN deal that has gone quiet (stale lastActivityDate)
+    // with at least one ghosting_nudge activity AND an expectedCloseDate that is still set.
+    const highValueOpenDeals = world.deals.filter(
+      (d) => d.status === "OPEN" && (d.value ?? 0) >= 100_000,
+    );
+    if (highValueOpenDeals.length === 0) {
+      issues.push({
+        severity: "fatal",
+        code: "ghosted_premise_no_high_value_open_deal",
+        message: `Scenario ${scenarioId} requires at least one OPEN deal with value >= 100,000, but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    // Of those, at least one must be ghosted: stale last activity AND at least one ghosting_nudge activity.
+    const simulationEnd = world.metadata.simulationEnd;
+    const DAY_MS = 86_400_000;
+    const ghostedCutoff = new Date(new Date(simulationEnd).getTime() - 30 * DAY_MS).toISOString();
+    let satisfied = false;
+    for (const deal of highValueOpenDeals) {
+      const lastTouch = deal.lastActivityDate ?? deal.createdAt;
+      if (lastTouch > ghostedCutoff) continue; // not stale enough
+      const dealActivities = world.activities.filter((a) => a.dealId === deal.id);
+      const hasGhostingNudge = dealActivities.some((a) => a.moment === "ghosting_nudge");
+      const hasOptimisticCloseDate = Boolean(deal.expectedCloseDate);
+      if (hasGhostingNudge && hasOptimisticCloseDate) {
+        satisfied = true;
+        break;
+      }
+    }
+    if (!satisfied && highValueOpenDeals.length > 0) {
+      issues.push({
+        severity: "fatal",
+        code: "ghosted_premise_no_ghosted_deal",
+        message: `Scenario ${scenarioId} requires a high-value OPEN deal with stale lastActivityDate (>30d before sim end), at least one ghosting_nudge activity, and an expectedCloseDate set - but none was found`,
+        entityType: "scenario",
+      });
+    }
+  }
+
+  if (scenarioId === "committee-security-delay") {
+    // Premise: at least one OPEN deal in a committee-style org with BOTH
+    // security_review AND finance_review activities, and friction >= 55 (stalled).
+    const committeeOrgs = world.organizations.filter((org) => org.story.buyingStyle === "committee");
+    if (committeeOrgs.length === 0) {
+      issues.push({
+        severity: "fatal",
+        code: "committee_premise_no_committee_org",
+        message: `Scenario ${scenarioId} requires at least one organization with buyingStyle="committee", but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    const committeeOrgIds = new Set(committeeOrgs.map((o) => o.id));
+    const candidateDeals = world.deals.filter((d) => committeeOrgIds.has(d.organizationId) && d.status === "OPEN");
+    const stalledCommitteeDeals = candidateDeals.filter((d) => d.buyerState.friction >= 55);
+    if (stalledCommitteeDeals.length === 0 && committeeOrgs.length > 0) {
+      issues.push({
+        severity: "fatal",
+        code: "committee_premise_no_stalled_open_deal",
+        message: `Scenario ${scenarioId} requires at least one OPEN deal in a committee org with friction>=55, but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    // Of the stalled committee deals, at least one must have BOTH security_review and finance_review activities.
+    let satisfied = false;
+    for (const deal of stalledCommitteeDeals) {
+      const dealActivities = world.activities.filter((a) => a.dealId === deal.id);
+      const hasSecurity = dealActivities.some((a) => a.moment === "security_review");
+      const hasFinance = dealActivities.some((a) => a.moment === "finance_review");
+      if (hasSecurity && hasFinance) {
+        satisfied = true;
+        break;
+      }
+    }
+    if (!satisfied && stalledCommitteeDeals.length > 0) {
+      issues.push({
+        severity: "fatal",
+        code: "committee_premise_missing_activities",
+        message: `Scenario ${scenarioId} requires a stalled committee deal with BOTH security_review and finance_review activities, but no such deal was found`,
+        entityType: "scenario",
+      });
+    }
+  }
+
+  if (scenarioId === "expansion-after-won-pilot") {
+    // Premise: at least one organization must have BOTH a WON deal AND an OPEN deal
+    // (the expansion deal lives in the same account as the won pilot).
+    const statusesByOrg = new Map<string, Set<string>>();
+    for (const deal of world.deals) {
+      if (!statusesByOrg.has(deal.organizationId)) statusesByOrg.set(deal.organizationId, new Set());
+      statusesByOrg.get(deal.organizationId)!.add(deal.status);
+    }
+    const orgsWithWonAndOpen = [...statusesByOrg.entries()].filter(([_, s]) => s.has("WON") && s.has("OPEN"));
+    if (orgsWithWonAndOpen.length === 0) {
+      issues.push({
+        severity: "fatal",
+        code: "expansion_premise_unsatisfied",
+        message: `Scenario ${scenarioId} requires at least one organization with both a WON deal AND an OPEN deal, but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    // Stronger check: the expansion deal (OPEN) value should be larger than the pilot (WON)
+    // to reflect "expansion after won pilot" semantics, when both live in the same org.
+    for (const [orgId, _] of orgsWithWonAndOpen) {
+      const orgDeals = world.deals.filter((d) => d.organizationId === orgId);
+      const wonDeal = orgDeals.find((d) => d.status === "WON");
+      const openDeal = orgDeals.find((d) => d.status === "OPEN");
+      if (wonDeal && openDeal && wonDeal.value && openDeal.value && openDeal.value <= wonDeal.value) {
+        issues.push({
+          severity: "warning",
+          code: "expansion_not_larger_than_pilot",
+          message: `Org ${orgId}: expansion deal ${openDeal.id} (${openDeal.value}) is not larger than pilot ${wonDeal.id} (${wonDeal.value}) - expected expansion to be a bigger opportunity`,
+          entityType: "deal",
+          entityId: openDeal.id,
+          path: "value",
+        });
+      }
+    }
+  }
+
+  return issues;
+}
+
+function validatePlausibility(world: GeneratedWorld, events: readonly SimulationEvent[]): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const leadById = new Map(world.leads.map((lead) => [lead.id, lead]));
+  const stageById = new Map(world.stages.map((stage) => [stage.id, stage]));
+  const dealEvents = events.filter((event) => event.entityType === "deal");
+  const emailBodyCounts = new Map<string, number>();
+
+  for (const email of world.emails) {
+    emailBodyCounts.set(email.body, (emailBodyCounts.get(email.body) ?? 0) + 1);
+  }
+
+  for (const [body, count] of emailBodyCounts) {
+    const repeatedBodyWarningThreshold = world.deals.length <= 5 ? 3 : world.deals.length <= 10 ? 4 : Number.POSITIVE_INFINITY;
+    if (count >= repeatedBodyWarningThreshold) {
+      issues.push({
+        severity: "warning",
+        code: "repeated_email_body",
+        message: `The same email body appears ${count} times: ${body.slice(0, 90)}...`,
+        entityType: "email",
+        path: "body",
+      });
+    }
+  }
+
+  for (const deal of world.deals) {
+    const sourceLead = deal.sourceLeadId ? leadById.get(deal.sourceLeadId) : undefined;
+    const valueDelta = sourceLead?.value && deal.value ? Math.abs(deal.value - sourceLead.value) : 0;
+
+    if (valueDelta >= 10_000 && !deal.story.valueExpansionReason) {
+      issues.push({
+        severity: "warning",
+        code: "deal_value_change_missing_reason",
+        message: `Deal ${deal.id} value differs from source lead ${sourceLead?.id} by ${valueDelta}, but no valueExpansionReason was recorded`,
+        entityType: "deal",
+        entityId: deal.id,
+        path: "story.valueExpansionReason",
+      });
+    }
+
+    const finalStage = stageById.get(deal.stageId);
+    const createdEvent = dealEvents.find((event) => event.entityId === deal.id && event.type === "deal.created");
+    const createdStageId = createdEvent?.data.stageId;
+    const createdStage = typeof createdStageId === "string" ? stageById.get(createdStageId) : undefined;
+    const stageChangeEvents = dealEvents.filter((event) => event.entityId === deal.id && event.type === "deal.stage_changed");
+
+    if (finalStage && finalStage.order > 0 && createdStage?.id === finalStage.id) {
+      issues.push({
+        severity: "warning",
+        code: "deal_created_at_final_stage",
+        message: `Deal ${deal.id} was created directly in final stage ${finalStage.name}`,
+        entityType: "deal",
+        entityId: deal.id,
+        path: "events.deal.created.data.stageId",
+      });
+    }
+
+    if (finalStage && finalStage.order > 1 && stageChangeEvents.length < finalStage.order) {
+      issues.push({
+        severity: "warning",
+        code: "deal_missing_stage_progression",
+        message: `Deal ${deal.id} is in ${finalStage.name}, but only has ${stageChangeEvents.length} stage progression event(s)`,
+        entityType: "deal",
+        entityId: deal.id,
+        path: "events",
+      });
+    }
+
+    if (deal.status === "WON" && deal.buyerState.friction > 50) {
+      issues.push({
+        severity: "warning",
+        code: "won_deal_high_final_friction",
+        message: `Won deal ${deal.id} ended with high friction (${deal.buyerState.friction}/100)`,
+        entityType: "deal",
+        entityId: deal.id,
+        path: "buyerState.friction",
+      });
+    }
   }
 
   return issues;
@@ -410,6 +656,8 @@ export function validateWorld(world: GeneratedWorld, events: readonly Simulation
     ...validateEmails(world, dealIds, contactIds, repIds),
     ...validateTemporalConsistency(world),
     ...validateEvents(world, events),
+    ...validatePlausibility(world, events),
+    ...validateScenarioPremise(world),
   ];
 
   const issueCounts = countBySeverity(issues);

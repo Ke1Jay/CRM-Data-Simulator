@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "crm:generate": "tsx src/cli.ts generate",
+    "crm:generate:suite": "tsx src/cli.ts generate-suite",
     "crm:validate": "tsx src/cli.ts validate",
     "crm:seed:local": "tsx src/cli.ts seed-local",
     "crm:push:pipedrive": "tsx src/cli.ts push-pipedrive",

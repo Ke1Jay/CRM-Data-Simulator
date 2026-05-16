@@ -181,6 +181,16 @@ export type Lead = EntityBase & {
   lastActivityDate?: ISODateString;
   nextActivityDate?: ISODateString;
   convertedDealId?: CanonicalId;
+  story: LeadStory;
+};
+
+export type LeadStory = {
+  intentSignal: string;
+  campaignContext: string;
+  qualificationReason: string;
+  conversionRationale?: string;
+  disqualificationReason?: string;
+  repAssessment: string;
 };
 
 export type BuyerState = {
@@ -217,6 +227,7 @@ export type DealStory = {
   urgencyReason: string;
   knownObjections: string[];
   winCondition: string;
+  valueExpansionReason?: string;
   riskFactors: string[];
   decisionProcess: string;
   stakeholders: DealStakeholder[];

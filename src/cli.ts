@@ -4,9 +4,17 @@ import type { ScenarioConfig } from "./engine/types.js";
 import { assertValidForImport, validateWorld } from "./engine/validators.js";
 import singleOrganizationDealLabScenario from "../scenarios/single-organization-deal-lab.js";
 import stalePipelineHiddenRiskScenario from "../scenarios/stale-pipeline-hidden-risk.js";
+import ghostedHighValueOpportunityScenario from "../scenarios/ghosted-high-value-opportunity.js";
+import committeeSecurityDelayScenario from "../scenarios/committee-security-delay.js";
+import messyCrmHygieneAccountScenario from "../scenarios/messy-crm-hygiene-account.js";
+import expansionAfterWonPilotScenario from "../scenarios/expansion-after-won-pilot.js";
 
 const scenarios: Record<string, ScenarioConfig> = {
   [singleOrganizationDealLabScenario.id]: singleOrganizationDealLabScenario,
+  [ghostedHighValueOpportunityScenario.id]: ghostedHighValueOpportunityScenario,
+  [committeeSecurityDelayScenario.id]: committeeSecurityDelayScenario,
+  [messyCrmHygieneAccountScenario.id]: messyCrmHygieneAccountScenario,
+  [expansionAfterWonPilotScenario.id]: expansionAfterWonPilotScenario,
   [stalePipelineHiddenRiskScenario.id]: stalePipelineHiddenRiskScenario,
 };
 
@@ -21,6 +29,7 @@ function printHelp(): void {
   console.log("");
   console.log("Implemented commands:");
   console.log("  generate --scenario <id> --seed <seed>");
+  console.log("  generate-suite --seed <seed>");
   console.log("");
   console.log(`Available scenarios: ${Object.keys(scenarios).join(", ")}`);
   console.log("");
@@ -43,6 +52,21 @@ async function generate(args: readonly string[]): Promise<void> {
     return;
   }
 
+  const { artifacts, runDir } = await generateScenario(scenario, seed);
+  printRunSummary(artifacts, runDir);
+}
+
+async function generateSuite(args: readonly string[]): Promise<void> {
+  const seed = getFlagValue(args, "--seed") ?? "42";
+
+  for (const scenario of Object.values(scenarios)) {
+    const { artifacts, runDir } = await generateScenario(scenario, seed);
+    printRunSummary(artifacts, runDir);
+    console.log("");
+  }
+}
+
+async function generateScenario(scenario: ScenarioConfig, seed: string): Promise<{ artifacts: ReturnType<typeof simulateScenario>; runDir: string }> {
   const artifacts = simulateScenario(scenario, { seed });
   const validationReport = validateWorld(artifacts.world, artifacts.events);
   validationReport.generatedAt = artifacts.world.metadata.generatedAt;
@@ -50,7 +74,13 @@ async function generate(args: readonly string[]): Promise<void> {
 
   assertValidForImport(validationReport);
 
-  const runDir = await writeRunArtifacts(artifacts);
+  return {
+    artifacts,
+    runDir: await writeRunArtifacts(artifacts),
+  };
+}
+
+function printRunSummary(artifacts: ReturnType<typeof simulateScenario>, runDir: string): void {
   console.log(`Generated run: ${artifacts.world.metadata.runId}`);
   console.log(`Wrote artifacts: ${runDir}`);
   console.log(
@@ -72,6 +102,11 @@ export async function main(): Promise<void> {
 
   if (command === "generate") {
     await generate(args);
+    return;
+  }
+
+  if (command === "generate-suite") {
+    await generateSuite(args);
     return;
   }
 
