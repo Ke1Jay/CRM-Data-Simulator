@@ -45,25 +45,50 @@ const FIRST_NAMES = [
   // Baltic / Latvian
   "Aiva", "Marta", "Laura", "Elina", "Sofia", "Anna", "Noah", "Rihards", "Maks", "Leo", "Daniel", "Oskars",
   "Liene", "Karlis", "Janis", "Inese", "Andris", "Krista", "Edgars", "Madara", "Toms", "Zane", "Ivars", "Kristine",
+  "Linda", "Reinis", "Jurgis", "Sandra", "Roberts", "Anete", "Davis", "Ilze", "Aigars", "Vita", "Peteris", "Dace",
+  "Gints", "Inga", "Martins", "Ineta", "Valters", "Gunta", "Arturs", "Anita", "Raivis", "Aija", "Egils", "Ieva",
   // Nordic / continental EU
   "Henrik", "Astrid", "Linnea", "Mikael", "Freja", "Lukas", "Emil", "Sara", "Erik", "Maja", "Jonas", "Klara",
+  "Sven", "Ingrid", "Magnus", "Annika", "Bjorn", "Tilde", "Soren", "Saga", "Anders", "Sigrid", "Niklas", "Elsa",
+  "Petter", "Vilma", "Stefan", "Greta", "Markus", "Wilma", "Felix", "Nora", "Oskar", "Alva", "Kasper", "Linn",
   // Anglo / mixed
   "James", "Olivia", "Ethan", "Hannah", "Lucas", "Mia", "Owen", "Chloe", "Adam", "Grace", "Ben", "Isla",
+  "William", "Sophie", "Charlie", "Emma", "Liam", "Ava", "Jack", "Ruby", "Harry", "Lily", "George", "Daisy",
+  "Oliver", "Freya", "Theo", "Amelia", "Sam", "Hazel", "Max", "Jasmine", "Henry", "Phoebe", "Felix", "Eva",
   // Southern EU
   "Marco", "Lucia", "Diego", "Paula", "Andre", "Beatriz", "Hugo", "Elena", "Mateo", "Carmen",
+  "Sergio", "Sofia", "Lorenzo", "Chiara", "Matteo", "Giulia", "Alessandro", "Valentina", "Pablo", "Isabella",
+  "Joaquim", "Catarina", "Tiago", "Rita", "Bruno", "Inês", "Rafa", "Joana", "Nuno", "Mariana",
+  // Polish / Czech / Hungarian
+  "Tomasz", "Magdalena", "Pawel", "Alicja", "Krzysztof", "Natalia", "Jakub", "Karolina",
+  "Petr", "Eva", "Jiri", "Hana", "Martin", "Lenka", "Tomas", "Klara",
+  "Balazs", "Eszter", "Zoltan", "Reka", "Levente", "Dora", "Adam", "Anna",
 ];
 
 const LAST_NAMES = [
   // Baltic / Latvian
   "Ozolina", "Kalnina", "Berzina", "Krumina", "Liepa", "Vitolins", "Ozolins", "Kalnins", "Berzins", "Krumins",
   "Liepins", "Apinis", "Skuja", "Eglitis", "Briedis", "Lacis", "Zarins", "Strauts", "Kalnitis", "Vitols",
+  "Caune", "Roze", "Priede", "Bumbieris", "Bite", "Klavins", "Pumpurs", "Saulitis", "Zalitis", "Andersons",
+  "Dzenis", "Vanags", "Pinkulis", "Smits", "Avotins", "Plavnieks", "Kazaks", "Sproge", "Veidemane", "Janovics",
   // Nordic / Germanic
   "Anderson", "Bennett", "Cooper", "Meyer", "Novak", "Schmidt", "Lindberg", "Kruger", "Bergstrom", "Sundqvist",
   "Holm", "Eriksen", "Hauser", "Vogel", "Mueller", "Fischer", "Becker", "Lindqvist", "Nilsen", "Larsson",
+  "Persson", "Karlsson", "Olsen", "Hansen", "Jensen", "Pedersen", "Nilsson", "Andersson", "Johansson", "Berg",
+  "Hoffmann", "Werner", "Klein", "Bauer", "Wagner", "Wolf", "Weber", "Schulz", "Hartmann", "Lehmann",
   // Anglo / mixed
   "Walsh", "Clarke", "Hughes", "Parker", "Brennan", "Cohen", "Reid", "Murray", "Doyle", "Hayes",
+  "Bell", "Carter", "Ward", "Patel", "Khan", "Foster", "Mitchell", "Ross", "Webb", "Stone",
+  "Riley", "Bennett", "Sutton", "Mason", "Holt", "Lane", "Pierce", "Lloyd", "Quinn", "Marsh",
   // Southern / continental EU
   "Rossi", "Conti", "Bianchi", "Marino", "Silva", "Costa", "Garcia", "Lopez", "Romano", "Esposito",
+  "Russo", "Ferrari", "Greco", "Bruno", "Galli", "Moretti", "Mancini", "Lombardi", "Ricci", "Barbieri",
+  "Martinez", "Sanchez", "Fernandez", "Gomez", "Hernandez", "Diaz", "Moreno", "Alvarez", "Ortiz", "Castro",
+  "Pereira", "Almeida", "Carvalho", "Sousa", "Lima", "Goncalves", "Mendes", "Rocha", "Cardoso", "Teixeira",
+  // Polish / Czech / Hungarian
+  "Kowalski", "Nowak", "Wisniewski", "Wojcik", "Kaminski", "Lewandowski", "Zielinski", "Jankowski",
+  "Novak", "Svoboda", "Dvorak", "Cerny", "Prochazka", "Kucera", "Vesely", "Horak",
+  "Nagy", "Kovacs", "Toth", "Szabo", "Horvath", "Varga", "Kiss", "Molnar",
 ];
 
 const ORG_PREFIXES = [
@@ -608,6 +633,216 @@ const GHOSTED_LEAD = {
   },
 };
 
+// ---- messy-crm-hygiene-account scenario constants ----
+// Premise: org_001 is the anchor account where the CRM is visibly messy. Signal patterns:
+//   - duplicate-like contacts (same first name, slightly different last name / initial)
+//   - missing emails/phones on multiple contacts
+//   - the org's biggest open deal has no expectedCloseDate
+//   - notes are short and vague ("ping", "circled back, n/a", "no update")
+// Scenario-wide we also push higher missing-close-date rates and higher missing-field rates
+// across other orgs - but the anchor org is where the messiness is intentionally concentrated
+// so that scenario premise validation can be deterministic.
+const MESSY_ANCHOR_ORG_STORY = {
+  industry: "Logistics",
+  sizeBand: "201-500" as const,
+  revenueBand: "20M-50M" as const,
+  growthStage: "growth" as const,
+  buyingStyle: "champion-led" as const,
+  crmHygiene: "messy" as const,
+  pains: ["missing contact records", "stale opportunity data", "no consistent activity logging across reps"],
+  buyingTrigger: "the new VP of Sales pulled a pipeline report and found half the records were unusable",
+  decisionPressure: "the CRO told the team to clean up CRM hygiene before the next forecast review, but no one owns the cleanup",
+};
+
+// MESSY_CONTACT_PROFILES are intentionally inconsistent. Some have full names, some have first
+// initials only. Two pairs share first names ("Anna Berzina" + "A. Berzina"; "Janis K." + "Janis Kalnins")
+// which is the duplicate-like CRM hygiene pattern we want to assert on.
+const MESSY_CONTACT_PROFILES: LabContactProfile[] = [
+  {
+    name: "Anna Berzina",
+    role: "VP of Sales",
+    seniority: "executive",
+    influence: "champion",
+    committeeRole: "champion",
+    communicationStyle: "warm",
+    personality: "pragmatic",
+    priorities: ["pipeline cleanup", "rep accountability", "faster follow-up"],
+    likelyObjections: ["bandwidth on my side", "CRM data quality"],
+    responsiveness: 72,
+    sentimentBias: 0.18,
+  },
+  {
+    name: "A. Berzina",
+    role: "Sales Director",
+    seniority: "executive",
+    influence: "champion",
+    committeeRole: "champion",
+    communicationStyle: "warm",
+    personality: "pragmatic",
+    priorities: ["pipeline cleanup", "rep accountability"],
+    likelyObjections: ["CRM data quality"],
+    responsiveness: 60,
+    sentimentBias: 0.12,
+  },
+  {
+    name: "Janis Kalnins",
+    role: "CRM Admin",
+    seniority: "manager",
+    influence: "user",
+    committeeRole: "crm-admin",
+    communicationStyle: "direct",
+    personality: "time-poor",
+    priorities: ["low implementation effort", "data hygiene"],
+    likelyObjections: ["implementation time"],
+    responsiveness: 48,
+    sentimentBias: -0.05,
+  },
+  {
+    name: "Janis K.",
+    role: "Sales Operations Analyst",
+    seniority: "individual-contributor",
+    influence: "user",
+    committeeRole: "end-user",
+    communicationStyle: "direct",
+    personality: "time-poor",
+    priorities: ["data hygiene", "less manual reporting"],
+    likelyObjections: ["implementation time"],
+    responsiveness: 45,
+    sentimentBias: -0.02,
+  },
+  {
+    name: "Linda Ozols",
+    role: "Finance Director",
+    seniority: "executive",
+    influence: "economic-buyer",
+    committeeRole: "finance-approver",
+    communicationStyle: "busy",
+    personality: "time-poor",
+    priorities: ["cost predictability", "auditable rollout"],
+    likelyObjections: ["budget timing"],
+    responsiveness: 32,
+    sentimentBias: -0.08,
+  },
+  {
+    name: "M. Roze",
+    role: "Sales Manager",
+    seniority: "manager",
+    influence: "evaluator",
+    committeeRole: "technical-evaluator",
+    communicationStyle: "analytical",
+    personality: "curious",
+    priorities: ["rep adoption", "stale-deal detection"],
+    likelyObjections: ["change management"],
+    responsiveness: 65,
+    sentimentBias: 0.08,
+  },
+  {
+    name: "Toms Liepa",
+    role: "Account Executive",
+    seniority: "individual-contributor",
+    influence: "user",
+    committeeRole: "end-user",
+    communicationStyle: "direct",
+    personality: "enthusiastic",
+    priorities: ["faster follow-up", "less manual reporting"],
+    likelyObjections: ["change management"],
+    responsiveness: 70,
+    sentimentBias: 0.15,
+  },
+];
+
+const MESSY_ANCHOR_DEAL_STORY = {
+  title: "CRM cleanup and pipeline visibility",
+  need: "get the pipeline back to a state where the forecast can be trusted",
+  urgencyReason: "the last forecast review was abandoned mid-meeting because the data was unreliable",
+  winCondition: "pilot proves stale-deal detection on the messiest segment without requiring upfront cleanup",
+  knownObjections: ["CRM data quality", "change management", "bandwidth for cleanup"],
+  riskFactors: ["no clear cleanup owner", "duplicate contact records", "missing close dates make the deal hard to forecast itself"],
+  value: 88_000,
+};
+
+const MESSY_ANCHOR_LEAD = {
+  title: "pipeline hygiene diagnostic",
+  source: "outbound" as const,
+  label: "warm",
+  value: 22_000,
+  story: {
+    intentSignal: "VP of Sales mentioned in a discovery call that half the pipeline records are unusable",
+    campaignContext: "outbound CRM hygiene sequence",
+    qualificationReason: "champion identified a concrete pain (forecast abandoned) and has air cover from the CRO",
+    conversionRationale: "converted once the champion accepted a paid pilot rather than a free cleanup audit",
+    repAssessment: "champion-driven; risk is no one owns the cleanup so the pilot might land on contested data",
+  },
+};
+
+// Short vague note variants for messy CRM hygiene. These are the kind of notes that look like a
+// rep ticked the activity-done box without leaving real context.
+const MESSY_VAGUE_NOTES_DEAL_SUMMARY = [
+  "ping",
+  "n/a",
+  "tbd",
+  "left vm",
+  "circled back",
+  "no update",
+  "see email",
+  "follow up tbd",
+  "spoke briefly",
+  "ok",
+  "see chat",
+  "fyi",
+  "wip",
+  "deferred",
+  "pending",
+  "on hold",
+  "asked again",
+  "no reply",
+  "no movement",
+  "see notes",
+  "?",
+  "tbc",
+  "open",
+  "pushed",
+  "not yet",
+  "back next wk",
+  "follow up",
+  "active",
+  "stalled",
+  "tba",
+];
+
+const MESSY_VAGUE_ACTIVITY_NOTES = [
+  "left vm",
+  "no answer",
+  "ping",
+  "rescheduled",
+  "no update",
+  "tbd next",
+  "covered briefly",
+  "circling back",
+  "missed",
+  "rescheduled to next week",
+  "no show",
+  "vm again",
+  "short call",
+  "quick chat",
+  "ran short",
+  "moved to email",
+  "covered partially",
+  "follow up next call",
+  "no agenda set",
+  "ran over",
+  "deferred to next week",
+  "asked to reschedule",
+  "got pulled away",
+  "brief intro only",
+  "skipped agenda",
+  "covered the basics",
+  "didn't get into specifics",
+  "kept it light",
+  "they cancelled",
+  "they joined late",
+];
+
 function pad(value: number): string {
   return String(value).padStart(3, "0");
 }
@@ -778,6 +1013,28 @@ function generateOrganizations(rng: Rng, scenario: ScenarioConfig, reps: Rep[], 
       story.buyingTrigger = GHOSTED_ORG_STORY.buyingTrigger;
       story.decisionPressure = GHOSTED_ORG_STORY.decisionPressure;
     }
+    if (scenario.id === "messy-crm-hygiene-account") {
+      if (index === 0) {
+        story.industry = MESSY_ANCHOR_ORG_STORY.industry;
+        story.sizeBand = MESSY_ANCHOR_ORG_STORY.sizeBand;
+        story.revenueBand = MESSY_ANCHOR_ORG_STORY.revenueBand;
+        story.growthStage = MESSY_ANCHOR_ORG_STORY.growthStage;
+        story.buyingStyle = MESSY_ANCHOR_ORG_STORY.buyingStyle;
+        story.crmHygiene = MESSY_ANCHOR_ORG_STORY.crmHygiene;
+        story.pains = [...MESSY_ANCHOR_ORG_STORY.pains];
+        story.buyingTrigger = MESSY_ANCHOR_ORG_STORY.buyingTrigger;
+        story.decisionPressure = MESSY_ANCHOR_ORG_STORY.decisionPressure;
+      } else {
+        // Push other orgs in the scenario toward messy / average hygiene so the
+        // scenario as a whole reads as a data-quality stress test rather than just
+        // one bad apple.
+        story.crmHygiene = rng.weightedChoice([
+          { value: "messy", weight: 55 },
+          { value: "average", weight: 35 },
+          { value: "clean", weight: 10 },
+        ]);
+      }
+    }
     const org: Organization = {
       id: id("org", index + 1),
       createdAt,
@@ -839,20 +1096,33 @@ function generateContacts(rng: Rng, scenario: ScenarioConfig, organizations: Org
     const count = rng.intBetween(scenario.volume.contactsPerOrganization.min, scenario.volume.contactsPerOrganization.max);
 
     const orgIndex = organizations.indexOf(org);
+    const isMessyAnchorOrg = scenario.id === "messy-crm-hygiene-account" && orgIndex === 0;
+    const isMessyScenario = scenario.id === "messy-crm-hygiene-account";
     for (let localIndex = 0; localIndex < count; localIndex++) {
       const index = contacts.length + 1;
       const useCommitteeProfile = scenario.id === "committee-security-delay" && orgIndex === 0;
       const useGhostedProfile = scenario.id === "ghosted-high-value-opportunity" && orgIndex === 0;
+      const useMessyProfile = isMessyAnchorOrg;
       const profile = scenario.id === "single-organization-deal-lab"
         ? LAB_CONTACT_PROFILES[localIndex % LAB_CONTACT_PROFILES.length]
         : useCommitteeProfile
           ? COMMITTEE_CONTACT_PROFILES[localIndex % COMMITTEE_CONTACT_PROFILES.length]
           : useGhostedProfile
             ? GHOSTED_CONTACT_PROFILES[localIndex % GHOSTED_CONTACT_PROFILES.length]
-            : undefined;
+            : useMessyProfile
+              ? MESSY_CONTACT_PROFILES[localIndex % MESSY_CONTACT_PROFILES.length]
+              : undefined;
       const name = profile?.name ?? `${rng.choice(FIRST_NAMES)} ${rng.choice(LAST_NAMES)}`;
       const traits = profile ?? contactTraits(rng, localIndex);
       const createdAt = addDays(org.createdAt, profile ? localIndex + 1 : rng.intBetween(0, 12));
+      // Messy scenario: drop the baseline email-present rate from 0.94 to 0.60, and phone
+      // from 0.82 to 0.50. On the anchor org we drop both further (every other contact missing
+      // something) so the duplicate-like pair pattern is visibly under-documented.
+      const emailPresentRate = isMessyAnchorOrg ? 0.50 : isMessyScenario ? 0.60 : 0.94;
+      const phonePresentRate = isMessyAnchorOrg ? 0.40 : isMessyScenario ? 0.50 : 0.82;
+      // Anchor-org profile contacts: keep email present for the named champion (first profile),
+      // but let other profile-backed contacts roll dice so the messiness is visible.
+      const forceEmailPresent = profile && !isMessyAnchorOrg;
       const contact: Contact = {
         id: id("con", index),
         createdAt,
@@ -860,8 +1130,8 @@ function generateContacts(rng: Rng, scenario: ScenarioConfig, organizations: Org
         organizationId: org.id,
         ownerId: org.ownerId,
         name,
-        email: profile || rng.bool(0.94) ? `${slug(name)}@${slug(org.name)}.test` : undefined,
-        phone: rng.bool(0.82) ? `+371 2${rng.intBetween(10_000_000, 99_999_999)}` : undefined,
+        email: forceEmailPresent || rng.bool(emailPresentRate) ? `${slug(name)}@${slug(org.name)}.test` : undefined,
+        phone: rng.bool(phonePresentRate) ? `+371 2${rng.intBetween(10_000_000, 99_999_999)}` : undefined,
         ...traits,
         priorities: profile?.priorities ?? pickMany(rng, CONTACT_PRIORITIES, rng.intBetween(2, 3)),
         likelyObjections: profile?.likelyObjections ?? pickMany(rng, CONTACT_OBJECTIONS, rng.intBetween(1, 2)),
@@ -944,8 +1214,9 @@ function generateLeads(
     const isExpansionExpansionLead = isExpansionScenario && index === 1;
     const isCommitteeLead = scenario.id === "committee-security-delay" && index === 0;
     const isGhostedLead = scenario.id === "ghosted-high-value-opportunity" && index === 0;
-    // Force first 2 leads to org_001 (the expansion account); committee + ghosted leads to org_001
-    const organization = isExpansionPilotLead || isExpansionExpansionLead || isCommitteeLead || isGhostedLead
+    const isMessyAnchorLead = scenario.id === "messy-crm-hygiene-account" && index === 0;
+    // Force first 2 leads to org_001 (the expansion account); committee + ghosted + messy-anchor leads to org_001
+    const organization = isExpansionPilotLead || isExpansionExpansionLead || isCommitteeLead || isGhostedLead || isMessyAnchorLead
       ? organizations[0]
       : organizations[index % organizations.length];
     const organizationContacts = byOrg.get(organization.id) ?? contacts;
@@ -960,7 +1231,9 @@ function generateLeads(
           ? organizationContacts.find((item) => item.committeeRole === "executive-sponsor") ?? organizationContacts[index % organizationContacts.length]
           : isGhostedLead
             ? organizationContacts.find((item) => item.committeeRole === "champion") ?? organizationContacts[index % organizationContacts.length]
-            : rng.choice(organizationContacts);
+            : isMessyAnchorLead
+              ? organizationContacts.find((item) => item.committeeRole === "champion") ?? organizationContacts[index % organizationContacts.length]
+              : rng.choice(organizationContacts);
     const leadWindowStart = maxDate(scenario.defaults.startDate, organization.createdAt, contact.createdAt);
     const latestLeadCreateOffset = Math.max(1, daysBetween(leadWindowStart, endDate) - 45);
     let createdAt = addDays(leadWindowStart, rng.intBetween(0, latestLeadCreateOffset));
@@ -980,6 +1253,10 @@ function generateLeads(
     if (isGhostedLead) {
       createdAt = addDays(leadWindowStart, rng.intBetween(0, 10));
     }
+    // Messy anchor lead: force early so the deal gets a meaningful aging window.
+    if (isMessyAnchorLead) {
+      createdAt = addDays(leadWindowStart, rng.intBetween(0, 10));
+    }
     const status: LeadStatus = index < Math.floor(scenario.volume.leads * 0.62)
       ? "CONVERTED"
       : rng.weightedChoice([
@@ -990,10 +1267,13 @@ function generateLeads(
     const labLeadStatuses: LeadStatus[] = ["CONVERTED", "CONVERTED", "CONVERTED", "NEW", "NEW"];
     const finalStatus: LeadStatus = scenario.id === "single-organization-deal-lab"
       ? labLeadStatuses[index] ?? status
-      : isExpansionPilotLead || isExpansionExpansionLead || isCommitteeLead || isGhostedLead
+      : isExpansionPilotLead || isExpansionExpansionLead || isCommitteeLead || isGhostedLead || isMessyAnchorLead
         ? "CONVERTED"
         : status;
-    const expectedCloseDate = rng.bool(scenario.messiness.missingCloseDateRate) ? undefined : addDays(createdAt, rng.intBetween(35, 100));
+    // Messy scenario: force every third lead to have no expectedCloseDate so the missing-data
+    // pattern is deterministic across leads as well as deals.
+    const forceLeadMissingCloseDate = scenario.id === "messy-crm-hygiene-account" && index % 3 === 0;
+    const expectedCloseDate = forceLeadMissingCloseDate || rng.bool(scenario.messiness.missingCloseDateRate) ? undefined : addDays(createdAt, rng.intBetween(35, 100));
     const leadStory = scenario.id === "single-organization-deal-lab"
       ? labLeadStories[index] ?? {
           intentSignal: rng.choice(LEAD_INTENT_SIGNALS),
@@ -1009,7 +1289,9 @@ function generateLeads(
             ? { ...COMMITTEE_LEAD.story }
             : isGhostedLead
               ? { ...GHOSTED_LEAD.story }
-              : {
+              : isMessyAnchorLead
+                ? { ...MESSY_ANCHOR_LEAD.story }
+                : {
               intentSignal: rng.choice(LEAD_INTENT_SIGNALS),
               campaignContext: rng.choice(CAMPAIGN_CONTEXTS),
               qualificationReason: `${contact.name} showed interest in ${rng.choice(organization.story.pains)}`,
@@ -1039,7 +1321,9 @@ function generateLeads(
               ? `${organization.name} ${COMMITTEE_LEAD.title}`
               : isGhostedLeadOverride
                 ? `${organization.name} ${GHOSTED_LEAD.title}`
-                : `${organization.name} ${rng.choice(["CRM review", "pipeline visibility", "forecast cleanup", "sales analytics"])} lead`,
+                : isMessyAnchorLead
+                  ? `${organization.name} ${MESSY_ANCHOR_LEAD.title}`
+                  : `${organization.name} ${rng.choice(["CRM review", "pipeline visibility", "forecast cleanup", "sales analytics"])} lead`,
       organizationId: organization.id,
       contactId: contact.id,
       ownerId: organization.ownerId,
@@ -1054,7 +1338,9 @@ function generateLeads(
               ? COMMITTEE_LEAD.source
               : isGhostedLeadOverride
                 ? GHOSTED_LEAD.source
-                : rng.choice(SOURCES),
+                : isMessyAnchorLead
+                  ? MESSY_ANCHOR_LEAD.source
+                  : rng.choice(SOURCES),
       label: scenario.id === "single-organization-deal-lab"
         ? ["priority", "finance-review", "demo-request", "warm", "security-review"][index] ?? rng.choice(["warm", "demo-request", "nurture", "priority"])
         : isExpansionPilotLead
@@ -1065,7 +1351,9 @@ function generateLeads(
               ? COMMITTEE_LEAD.label
               : isGhostedLeadOverride
                 ? GHOSTED_LEAD.label
-                : rng.choice(["warm", "demo-request", "nurture", "priority"]),
+                : isMessyAnchorLead
+                  ? MESSY_ANCHOR_LEAD.label
+                  : rng.choice(["warm", "demo-request", "nurture", "priority"]),
       value: scenario.id === "single-organization-deal-lab"
         ? labLeadValues[index] ?? rng.intBetween(8, 90) * 1_000
         : isExpansionPilotLead
@@ -1076,7 +1364,9 @@ function generateLeads(
               ? COMMITTEE_LEAD.value
               : isGhostedLeadOverride
                 ? GHOSTED_LEAD.value
-                : rng.intBetween(8, 90) * 1_000,
+                : isMessyAnchorLead
+                  ? MESSY_ANCHOR_LEAD.value
+                  : rng.intBetween(8, 90) * 1_000,
       currency: scenario.defaults.currency,
       expectedCloseDate: expectedCloseDate && expectedCloseDate > endDate ? endDate : expectedCloseDate,
       lastActivityDate: addDays(createdAt, rng.intBetween(1, 24)),
@@ -1123,6 +1413,8 @@ function planDealStatuses(scenario: ScenarioConfig): DealPlan {
   } else if (scenario.id === "ghosted-high-value-opportunity") {
     statuses[0] = "OPEN";
     preDesignatedCold.add(0);  // the ghosted high-value deal - cold designation drives stale lastActivity
+  } else if (scenario.id === "messy-crm-hygiene-account") {
+    statuses[0] = "OPEN"; forcedOpen.add(0);  // the anchor messy deal stays OPEN as the in-progress messiness case study
   }
 
   // Plan the win/lost balance among closed slots.
@@ -1277,9 +1569,15 @@ function activitySubject(
       `Pilot signals w/ ${firstName}`,
       `${shortOrg} data sampling`,
       `${firstName} - data scope conversation`,
-      `Field completeness check`,
+      `Field completeness check - ${shortOrg}`,
       `CRM hygiene w/ ${firstName}`,
       `Records review - ${shortOrg}`,
+      `${shortOrg} - field-fill audit`,
+      `${firstName}: which data we can trust`,
+      `Sampling ${shortOrg} records`,
+      `${dealShort} - data signal vs noise`,
+      `${firstName} on CRM completeness`,
+      `${shortOrg} hygiene baseline`,
     ]);
   }
   if (moment === "pilot_scope") {
@@ -1291,7 +1589,11 @@ function activitySubject(
       `${shortOrg} - tightening pilot`,
       `Pilot framing w/ ${firstName}`,
       `${firstName} - pilot v2 draft`,
-      `Locking pilot scope`,
+      `Locking pilot scope - ${shortOrg}`,
+      `${dealShort} - pilot boundaries`,
+      `${firstName}: what stays in pilot`,
+      `${shortOrg} pilot: scope sign-off`,
+      `Pilot framing v3 - ${firstName}`,
     ]);
   }
   if (moment === "finance_review") {
@@ -1303,8 +1605,11 @@ function activitySubject(
       `${firstName} - value model`,
       `${shortOrg} commercial framing`,
       `Pricing/rollout w/ ${firstName}`,
-      `Revenue-at-risk math`,
+      `Revenue-at-risk math - ${shortOrg}`,
       `${dealShort} - cost & value`,
+      `${firstName}: rollout economics`,
+      `${shortOrg} budget framing`,
+      `${dealShort}: ROI walkthrough`,
     ]);
   }
   if (moment === "security_review") {
@@ -1681,6 +1986,14 @@ function noteBody(rng: Rng, kind: "deal-summary" | "risk" | "close", deal: Deal,
   const firstName = contact.name.split(" ")[0];
   const shortOrg = organization.name.split(" ")[0];
 
+  // Messy CRM hygiene: half the time a deal-summary note from a messy org is just a
+  // vague one-liner ("ping", "tbd", "n/a") - the kind of note that proves the data
+  // quality complaint. We don't shortcut risk/close notes because those carry the
+  // signal the rest of the system relies on.
+  if (kind === "deal-summary" && organization.story.crmHygiene === "messy" && rng.bool(0.5)) {
+    return rng.choice(MESSY_VAGUE_NOTES_DEAL_SUMMARY);
+  }
+
   if (kind === "risk") {
     return rng.choice([
       `Risk on ${organization.name}: ${deal.story.riskFactors.join(", ")}. ${firstName} is ${contact.personality}; ${frictionPhrase(deal)}.`,
@@ -1754,49 +2067,61 @@ function emailSubject(rng: Rng, deal: Deal, contact: Contact, organization: Orga
       `${shortOrg}: ${need}`,
       `Following up - ${firstName}`,
       `Intro: ${dealShort}`,
-      `Notes from our call`,
+      `Notes from our call - ${firstName}`,
       `${firstName} - thanks for the time`,
       `Quick recap, ${firstName}`,
       `${shortOrg} discovery notes`,
       `Following Tuesday's call, ${firstName}`,
       `${firstName}: where I'd start`,
+      `${shortOrg} - first pass on ${dealShort}`,
+      `${firstName}, post-call notes`,
+      `${dealShort} - opening thoughts`,
     ]);
   }
   if (activity.moment === "process_mapping") {
     return rng.choice([
       `Process notes - ${firstName}`,
-      `Pilot shape after today`,
+      `Pilot shape after today - ${shortOrg}`,
       `${shortOrg}: pilot framing`,
       `Next step on ${dealShort}`,
       `${firstName} - mapping notes`,
-      `How the pilot fits your motion`,
+      `How the pilot fits your motion - ${shortOrg}`,
       `${shortOrg} pilot, drafted`,
       `Tightening pilot scope, ${firstName}`,
+      `${firstName}: workflow recap`,
+      `${shortOrg} - where the pilot slots in`,
+      `${dealShort} - process notes`,
     ]);
   }
   if (activity.moment === "data_quality_review") {
     return rng.choice([
-      `CRM data - what's usable`,
-      `Re: data quality`,
-      `Pilot signals (vs cleanup)`,
+      `CRM data - what's usable for ${shortOrg}`,
+      `Re: data quality - ${firstName}`,
+      `Pilot signals (vs cleanup) - ${shortOrg}`,
       `${firstName}: data scope`,
-      `Working with the data we have`,
+      `Working with the data we have - ${shortOrg}`,
       `${shortOrg}: pilot vs cleanup`,
       `${firstName} - separating the two`,
-      `Data confidence, narrowed`,
+      `Data confidence, narrowed - ${shortOrg}`,
       `${dealShort}: scope on the data side`,
+      `${firstName}, on CRM completeness`,
+      `${shortOrg} field-fill sampling`,
+      `${dealShort} - what the data can show`,
     ]);
   }
   if (activity.moment === "pilot_scope") {
     return rng.choice([
-      `Pilot scope - tight version`,
+      `Pilot scope - tight version - ${shortOrg}`,
       `${dealShort}: narrow plan`,
       `Pilot scope for ${firstName}`,
-      `Keeping pilot small`,
+      `Keeping pilot small - ${shortOrg}`,
       `${firstName}: pilot plan v2`,
       `Locked pilot scope - ${shortOrg}`,
-      `Pilot path, tightened`,
+      `Pilot path, tightened - ${firstName}`,
       `${dealShort} - one-page plan`,
+      `${firstName} - pilot boundaries`,
+      `${shortOrg} pilot: what's in / out`,
+      `${dealShort}: signing off scope, ${firstName}`,
     ]);
   }
   if (activity.moment === "finance_review") {
@@ -1804,60 +2129,72 @@ function emailSubject(rng: Rng, deal: Deal, contact: Contact, organization: Orga
       `Business case - ${dealShort}`,
       `Numbers for ${firstName}`,
       `${shortOrg}: value walkthrough`,
-      `Forecast impact framing`,
+      `Forecast impact framing - ${shortOrg}`,
       `${firstName} - value model`,
       `Revenue-at-risk math, ${shortOrg}`,
-      `Tightened business case`,
+      `Tightened business case - ${shortOrg}`,
       `${dealShort}: cost & value, one slide`,
       `${firstName}, on the numbers`,
+      `${shortOrg} ROI shape`,
+      `${dealShort} - rollout economics`,
+      `${firstName}: revenue impact math`,
     ]);
   }
   if (activity.moment === "security_review") {
     return rng.choice([
-      `Security checklist - pilot only`,
-      `Implementation Q's`,
+      `Security checklist - pilot only - ${shortOrg}`,
+      `Implementation Q's - ${firstName}`,
       `${firstName}: security review`,
-      `Pilot data + access`,
+      `Pilot data + access - ${shortOrg}`,
       `${shortOrg}: pilot security scope`,
-      `Data-access model for pilot`,
+      `Data-access model for pilot - ${firstName}`,
       `Short security checklist, ${firstName}`,
-      `Implementation footprint`,
+      `Implementation footprint - ${shortOrg}`,
+      `${firstName} - sec review summary`,
+      `${dealShort} - access boundaries`,
+      `${shortOrg}: rollout sec questions parked`,
     ]);
   }
   if (activity.moment === "pilot_success") {
     return rng.choice([
-      `Pilot evidence landed`,
+      `Pilot evidence landed - ${shortOrg}`,
       `Proof point: ${need}`,
       `${dealShort}: pilot results`,
-      `Moving to close`,
+      `Moving to close - ${shortOrg}`,
       `${firstName} - pilot worked`,
       `${shortOrg} pilot - the numbers`,
-      `Pilot read-out attached`,
+      `Pilot read-out attached - ${firstName}`,
       `Time to talk close, ${firstName}`,
+      `${dealShort} - read-out summary`,
+      `${shortOrg} pilot landed`,
     ]);
   }
   if (activity.moment === "close_confirmation") {
     return rng.choice([
       `Close path - ${dealShort}`,
       `Wrapping up ${shortOrg}`,
-      `Signature notes`,
-      `Final scope`,
+      `Signature notes - ${firstName}`,
+      `Final scope - ${shortOrg}`,
       `${firstName} - close confirmed`,
       `${shortOrg}: signing today`,
-      `Final pilot scope summary`,
+      `Final pilot scope summary - ${shortOrg}`,
       `Closing notes for ${firstName}`,
+      `${dealShort} - signature path`,
+      `${shortOrg}: wrap-up details`,
     ]);
   }
   if (activity.moment === "loss_review") {
     return rng.choice([
       `Closing out ${dealShort}`,
       `Final note - ${firstName}`,
-      `Marking lost - door open`,
+      `Marking lost - door open - ${shortOrg}`,
       `${shortOrg}: future timing`,
       `${firstName} - thanks for the candor`,
-      `Closing the file, keeping warm`,
+      `Closing the file, keeping warm - ${shortOrg}`,
       `${dealShort} - not now, but later`,
       `${shortOrg}: re-engaging on timing`,
+      `${firstName}: parking ${dealShort} for now`,
+      `${shortOrg} - door open for future`,
     ]);
   }
   if (activity.moment === "ghosting_nudge") {
@@ -1946,6 +2283,11 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Useful framing. The team has been burned by tools that ask too much upfront - we need this to be the opposite.`,
         `Pain around ${contact.priorities[0]} is real. What I need from you: pilot scope so tight my team can't push back.`,
         `Worth a second conversation. Bring the narrowest version of pilot scope you can defend.`,
+        `Helpful intro. ${capitalizeSentence(contact.priorities[0])} is what I'd want the first phase to prove. Send the pilot framing in writing so I can circulate it.`,
+        `Following the thread. Realistically I can sponsor a 4-week test if it stays close to ${contact.priorities[0]} and avoids asking the team to change reporting habits.`,
+        `Useful conversation. Before the next call, I want a one-pager: what the pilot does, what we measure, what we don't touch.`,
+        `Honest answer - I'm interested, but my team has bandwidth for one new thing this quarter. Show me why this should be it.`,
+        `Got the gist. ${capitalizeSentence(contact.priorities[0])} is real for us. The question is whether a pilot is faster than fixing this internally.`,
       ]);
     }
 
@@ -1957,6 +2299,11 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Honest read: our CRM has gaps. The pilot has to be useful despite that or the whole story falls over.`,
         `Looked at the sample. We can work with it for the pilot scope. Cleanup conversation stays separate.`,
         `Need the pilot to assume we won't do cleanup. If it still produces signal, we have something.`,
+        `Pulled the field-completeness report this morning. It's bad. We can pilot on a subset, but I want it framed as "useful despite the data" not "useful once we clean the data".`,
+        `I'm fine with the pilot scope working off existing CRM data, but flag clearly which segments are too messy to test on. Don't let us run the pilot where it'll fail.`,
+        `Two things I need: a list of fields the pilot needs to be populated, and what happens to results when 20-30% of those fields are missing. Realistic case for us.`,
+        `Talked to my RevOps lead. We can clean up two segments in advance if that lets the pilot avoid the worst data. Tell me which segments matter most.`,
+        `OK on running the pilot on as-is data. Not OK on the pilot quietly failing because the data is bad. Want to agree what we do if signals are weak.`,
       ]);
     }
 
@@ -1968,6 +2315,11 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Finance won't approve a pilot framed as reporting. Has to be revenue-at-risk math, or we don't bring it to the committee.`,
         `Pricing scenarios attached are workable. Rollout tier is the one we'll fight over - not pilot.`,
         `Three things I need: pilot cost, rollout cost ceiling, and what success looks like in EUR. Today.`,
+        `For finance approval I need this expressed as "X EUR of pipeline goes from at-risk to forecastable" - not as a reporting upgrade. Reframe and resend.`,
+        `The CFO will only sign off if there's a numeric counterfactual: what's the cost of NOT doing this. Send that.`,
+        `Pricing reads fine for pilot. Rollout pricing is where I need a ceiling, not a range - finance won't approve a range.`,
+        `I want a single-page case before the next finance review. Three lines: cost, savings/uplift, and what we lose if we say no.`,
+        `Tightened the numbers internally. Pilot cost is approvable. Rollout cost as-stated is not - need a structured discount conversation before that's on the table.`,
       ]);
     }
 
@@ -1979,6 +2331,11 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Pilot footprint is fine if it stays as small as you described. Rollout will need a real audit.`,
         `Implementation cost has to stay near zero for pilot. Anything more and ops will block it.`,
         `Send the dataflow + minimum-fields list. If pilot avoids audit-heavy paths, we can move.`,
+        `Our security policy treats this kind of integration as medium risk. Pilot scope is fine if we limit which records the system sees - send the data-access boundaries.`,
+        `Got the checklist. Two open items: data residency confirmation and the audit log retention period. Clear those and we can sign off pilot.`,
+        `Discussed with our CISO. Pilot is OK if it doesn't touch the dirty data segments (compliance flags). Rollout will need a full DPIA.`,
+        `Implementation review next week. Send: who from your side connects to which system, what permissions they need, and how we revoke them.`,
+        `Pilot security review is approvable. Rollout review will require us to involve infosec from week one - don't surprise them later.`,
       ]);
     }
 
@@ -1988,6 +2345,10 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Results read well. Want to bring this to the sponsor before we talk rollout.`,
         `Numbers hold up. The case for moving forward is clear if budget timing aligns.`,
         `Pilot did what it said. Setting up the close conversation next week.`,
+        `Pilot data lines up with what we hoped. I'll position this to the sponsor as a pilot that proved its narrow case - not a green light for unlimited scope.`,
+        `Results are credible. One thing the team flagged: the signal-to-noise on lower-value deals. Want to address that before rollout, not at rollout.`,
+        `Showed the pilot read-out internally. People are convinced. The remaining question is rollout pacing, not whether we move.`,
+        `Pilot evidence holds up under pushback. Moving this to commercial conversation. Standard procurement on our side, no surprises expected.`,
       ]);
     }
 
@@ -1997,6 +2358,10 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Thanks for the candor. Genuinely - timing didn't work, not the product. ${capitalizeSentence(deal.lostReason ?? deal.story.knownObjections[0])} is the real reason.`,
         `Honest answer: ${deal.lostReason ?? deal.story.knownObjections[0]}. Stay in touch.`,
         `Closing the loop on our side. ${capitalizeSentence(deal.lostReason ?? deal.story.knownObjections[0])} - might revisit next cycle.`,
+        `It's a not-now, not a no. ${capitalizeSentence(deal.lostReason ?? deal.story.knownObjections[0])}. Reach back out in two quarters and we'll have a different conversation.`,
+        `Real talk - team capacity for new tooling is gone for this year. ${capitalizeSentence(deal.lostReason ?? deal.story.knownObjections[0])}. Keep me on the list for the next cycle.`,
+        `Decision came back as ${deal.lostReason ?? deal.story.knownObjections[0]}. Appreciate how you handled the process - direct, no pressure. Will remember that.`,
+        `We went with a different path. ${capitalizeSentence(deal.lostReason ?? deal.story.knownObjections[0])} was the deciding factor, not the product itself.`,
       ]);
     }
 
@@ -2008,6 +2373,10 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
         `Apologies for the silence. Buried in something else; this isn't dead, just paused.`,
         `Trying to clear my plate. Will come back on this within the next two weeks.`,
         `Honest: I dropped this. Not because it's wrong - because I haven't had bandwidth.`,
+        `Replying so you don't have to wonder. The deal is paused on our side - not dead, but I can't push it this quarter. Will reach back out when timing changes.`,
+        `Sorry for the radio silence. We had two leadership departures and this got pushed off. If you want to close the file for now, that's fair - I'll come back when I can drive it properly.`,
+        `Appreciate you not giving up. Reality: my sponsor is preoccupied with something else and won't engage on this for at least 6 weeks. Park it.`,
+        `Got pulled into something internal. Not a no on the product - a no on the timing. Re-engage me end of next quarter.`,
       ]);
     }
 
@@ -2153,6 +2522,16 @@ function emailBodyForActivity(direction: Email["direction"], deal: Deal, contact
       `${repOpener} touching base one more time. ${capitalizeSentence(deal.story.winCondition)} - still the right test?`,
       `${repOpener} sanity check: is this still active in your head, or has it slipped?`,
       `${repOpener} dropping the cadence unless you want me to keep going. Easy to revive if priorities shift.`,
+      `${repOpener} not trying to be a pest - one quick yes/no. ${capitalizeSentence(deal.title)} still on your list, or has it slipped behind other priorities?`,
+      `${repOpener} ${state.friction >= 60 ? "I know things are loud on your side" : "I know the calendar has been full"}. Want to make this trivial: reply with one word - alive, paused, dead.`,
+      `${repOpener} stepping back. If ${deal.story.winCondition} still matters in Q3, ping me and I'll re-open this cleanly. Otherwise marking the file inactive.`,
+      `${repOpener} last attempt before I close the file for now. If the pain on ${deal.story.need} is still real, even a one-liner works.`,
+      `${repOpener} sending a smaller ask: 10 minutes next week to decide alive or not. If that's also too much, totally fair - just say so.`,
+      `${repOpener} this is the polite goodbye email unless you tell me otherwise. Door stays open whenever ${deal.story.knownObjections[0]} resolves.`,
+      `${repOpener} I'll stop nudging after this. Genuine ask: is the timing wrong, or is the framing wrong? Either is useful for me to know.`,
+      `${repOpener} parking this on my side unless I hear back. Not giving up - just respecting that other things are louder for you right now.`,
+      `${repOpener} a 30-second reply works: "still on" or "drop it" - either is helpful. Trying to keep my pipeline honest.`,
+      `${repOpener} circling back once more. If ${deal.story.winCondition} would still help this quarter, the pilot can start light. If not, I'll move on.`,
     ]);
   }
 
@@ -2228,6 +2607,20 @@ function activityNoteBody(activity: Activity, deal: Deal, contact: Contact, orga
   const firstName = contact.name.split(" ")[0];
   const riskLine = deal.story.riskFactors.length > 0 ? `Risks: ${joinHuman(deal.story.riskFactors)}.` : "";
   const shortOrg = organization.name.split(" ")[0];
+
+  // Messy CRM hygiene: ~50% of activity-notes for messy orgs are short throwaway lines
+  // ("left vm", "no answer") - rep ticked the box without leaving substance. Deterministic
+  // by activity id. We don't shortcut close_confirmation or pilot_success notes because
+  // those still need to indicate the actual outcome.
+  const messyShortNoteSelector = (numericIdPart(activity.id) + numericIdPart(activity.dueDate.slice(0, 10))) % 2;
+  if (
+    organization.story.crmHygiene === "messy"
+    && activity.moment !== "close_confirmation"
+    && activity.moment !== "pilot_success"
+    && messyShortNoteSelector === 0
+  ) {
+    return variantForActivity(activity, MESSY_VAGUE_ACTIVITY_NOTES);
+  }
 
   if (activity.moment === "discovery") {
     return variantForActivity(activity, [
@@ -2398,16 +2791,78 @@ function activityNoteBody(activity: Activity, deal: Deal, contact: Contact, orga
   ]);
 }
 
-function valueExpansionReasonForDeal(dealIndex: number, leadValue: number | undefined, dealValue: number): string {
-  const leadValueText = leadValue ? `${leadValue} EUR` : "the original lead estimate";
-  const dealValueText = `${dealValue} EUR`;
-  const reasons = [
-    `Initial lead was scoped as a lightweight workshop at ${leadValueText}; discovery expanded it into a paid pilot covering sales leadership and RevOps, so the opportunity was reforecast to ${dealValueText}.`,
-    `Lead value started at ${leadValueText}, but finance asked for a rollout-sized business case after the pilot discussion. Rep updated the opportunity to ${dealValueText} once the committee scope was clear.`,
+function valueExpansionReasonForDeal(
+  dealIndex: number,
+  leadValue: number | undefined,
+  dealValue: number,
+  organization: Organization,
+  scenarioId: string,
+): string {
+  const leadValueText = leadValue ? `${leadValue.toLocaleString()} EUR` : "the original lead estimate";
+  const dealValueText = `${dealValue.toLocaleString()} EUR`;
+  const need = organization.story.pains[0] ?? "the buyer's stated need";
+  const valueDelta = dealValue - (leadValue ?? 0);
+  const isLargeJump = valueDelta >= 50_000;
+  const isVeryLarge = dealValue >= 150_000;
+  const isCommittee = organization.story.buyingStyle === "committee";
+  const isMessy = organization.story.crmHygiene === "messy";
+
+  // Scenario-aware templates: each scenario gets a couple of variants that fit its
+  // premise. We fall back to the generic pool for other scenarios.
+  if (scenarioId === "ghosted-high-value-opportunity" && isVeryLarge) {
+    const ghosted = [
+      `Lead was qualified at ${leadValueText} based on a single champion conversation about ${need}. Once the champion brought the executive sponsor in for a discovery walkthrough, the rep reforecast the opportunity to ${dealValueText} to reflect the wider scope under discussion.`,
+      `Started at ${leadValueText} from a champion referral. The CRO confirmed the slipping enterprise deal was the second-largest of the year, and the opportunity was reforecast to ${dealValueText} to reflect what the champion is actually trying to solve.`,
+      `Initial estimate of ${leadValueText} was the champion's lightweight pilot framing. The reforecast to ${dealValueText} reflects the enterprise rollout scope the CRO actually wants to fund - if the champion can re-engage the executive sponsor.`,
+    ];
+    return ghosted[Math.abs(dealIndex) % ghosted.length];
+  }
+
+  if (scenarioId === "committee-security-delay") {
+    const committee = [
+      `Initial lead was framed at ${leadValueText} as a workshop with the champion. Once the buying committee surfaced, the rep reforecast to ${dealValueText} to account for finance and security each needing their own pilot scope.`,
+      `Lead value started at ${leadValueText}. After the first committee meeting, the rep updated the deal to ${dealValueText} to reflect the rollout scale the committee is actually evaluating, not the lightweight workshop the champion floated.`,
+      `Original lead was ${leadValueText}, sized around the champion's view of the problem. The committee asked for a rollout-sized case during the second round of discovery and the value was updated to ${dealValueText}.`,
+    ];
+    return committee[Math.abs(dealIndex) % committee.length];
+  }
+
+  if (scenarioId === "messy-crm-hygiene-account" && isMessy) {
+    const messy = [
+      `Lead came in at ${leadValueText} for a hygiene diagnostic. The conversation widened to a paid pilot on stale-deal detection across the messiest segment, so the opportunity was reforecast to ${dealValueText}.`,
+      `Initial scope at ${leadValueText} was a CRM cleanup audit. Champion pivoted the conversation to "pilot that works despite the messiness" and the deal was updated to ${dealValueText}.`,
+      `Started at ${leadValueText}. Discovery surfaced that the CRO wanted a forecast-confidence pilot, not just a hygiene fix. Reforecast to ${dealValueText} to reflect that scope.`,
+    ];
+    return messy[Math.abs(dealIndex) % messy.length];
+  }
+
+  if (scenarioId === "expansion-after-won-pilot" && isLargeJump) {
+    const expansion = [
+      `Original lead was scoped at ${leadValueText} as a single-team pilot. The pilot's success widened the conversation to a full-team rollout and the deal was updated to ${dealValueText}.`,
+      `Lead value of ${leadValueText} reflected the pilot scope. The opportunity was reforecast to ${dealValueText} once leadership asked for a rollout-sized plan based on pilot results.`,
+    ];
+    return expansion[Math.abs(dealIndex) % expansion.length];
+  }
+
+  // Generic templates - widened pool with topic variety.
+  const generic = [
+    `Initial lead was scoped at ${leadValueText} for a lightweight discovery engagement; the conversation widened into a paid pilot during qualification, and the opportunity was reforecast to ${dealValueText}.`,
+    `Lead value started at ${leadValueText}, but finance asked for a rollout-sized business case after the pilot discussion. Rep updated the opportunity to ${dealValueText} once the committee scope was clearer.`,
     `Original lead value was ${leadValueText}; the expansion conversation added stalled-deal monitoring and forecast-risk reporting, moving the opportunity value to ${dealValueText}.`,
+    `Lead came in at ${leadValueText} as a single-team request. Discovery surfaced that the buyer is solving for the whole sales org, so the deal was reforecast to ${dealValueText}.`,
+    `Started at ${leadValueText}, sized around the champion's view. The buying committee widened the scope during the second meeting and the rep updated value to ${dealValueText}.`,
+    `Initial estimate of ${leadValueText} reflected a workshop framing. Real scope emerged during process mapping (${need}) and the opportunity was reforecast to ${dealValueText}.`,
+    `Lead value of ${leadValueText} was the buyer's first pass before they involved finance. After the value-walkthrough conversation, the deal was updated to ${dealValueText}.`,
+    `Original ${leadValueText} lead was qualified around a single workflow. Once we mapped the dependencies, the deal expanded to ${dealValueText} to cover the actual problem surface.`,
+    `Started small at ${leadValueText} - the champion wanted to keep the first conversation low-stakes. After the executive sponsor joined, the deal was updated to ${dealValueText}.`,
+    `Lead value was ${leadValueText} based on the inbound form. Real conversation was a rollout, not a pilot, and the deal was reforecast to ${dealValueText} after discovery.`,
+    `Initial ${leadValueText} reflected the rep's conservative first estimate. The deal was widened to ${dealValueText} once the buyer described what success would actually require.`,
+    `Lead came in at ${leadValueText}. Three discovery calls later, the buyer's stated need (${need}) is materially bigger than the inbound suggested, so the deal was updated to ${dealValueText}.`,
   ];
 
-  return reasons[dealIndex % reasons.length];
+  // Use isCommittee/dealValue to bias selection so deal index isn't the only key
+  const offset = (isCommittee ? 1 : 0) + (isVeryLarge ? 2 : 0) + (isLargeJump ? 1 : 0);
+  return generic[(Math.abs(dealIndex) + offset) % generic.length];
 }
 
 function generateDeals(
@@ -2427,6 +2882,7 @@ function generateDeals(
   const isExpansionScenario = scenario.id === "expansion-after-won-pilot";
   const isCommitteeScenario = scenario.id === "committee-security-delay";
   const isGhostedScenario = scenario.id === "ghosted-high-value-opportunity";
+  const isMessyScenario = scenario.id === "messy-crm-hygiene-account";
   const plan = planDealStatuses(scenario);
 
   return Array.from({ length: scenario.volume.deals }, (_, index) => {
@@ -2434,6 +2890,10 @@ function generateDeals(
     const isExpansionExpansionDeal = isExpansionScenario && index === 1;
     const isCommitteeDeal = isCommitteeScenario && index === 0;
     const isGhostedDeal = isGhostedScenario && index === 0;
+    const isMessyAnchorDeal = isMessyScenario && index === 0;
+    // Messy scenario: force at least every third deal to have no expectedCloseDate, so the
+    // "high rate of missing close dates" premise is deterministic rather than knob-driven.
+    const forceMissingCloseDate = isMessyScenario && index % 3 === 0;
     const sourceLead = convertedLeads[index];
     const organization = sourceLead ? organizations.find((item) => item.id === sourceLead.organizationId) ?? organizations[index % organizations.length] : organizations[index % organizations.length];
     const organizationContacts = byOrg.get(organization.id) ?? contacts;
@@ -2470,9 +2930,11 @@ function generateDeals(
             ? stages[3] // Negotiation - committee has gotten past proposal, now stuck in security+finance review
             : isGhostedDeal
               ? stages[3] // Negotiation - the ghosted deal moved past proposal then went silent
-              : status === "OPEN"
-                ? stages[isForcedCold || isForcedStalled ? rng.intBetween(1, stages.length - 2) : rng.intBetween(0, stages.length - 1)]
-                : stages[stages.length - 1];
+              : isMessyAnchorDeal
+                ? stages[2] // Proposal-sent - the anchor messy deal sits mid-pipeline with vague follow-up
+                : status === "OPEN"
+                  ? stages[isForcedCold || isForcedStalled ? rng.intBetween(1, stages.length - 2) : rng.intBetween(0, stages.length - 1)]
+                  : stages[stages.length - 1];
     const labDealValues = [48_000, 76_000, 130_000];
     const baseValue = scenario.id === "single-organization-deal-lab"
       ? labDealValues[index] ?? rng.intBetween(12, 180) * 1_000
@@ -2484,7 +2946,9 @@ function generateDeals(
             ? COMMITTEE_DEAL_STORY.value
             : isGhostedDeal
               ? GHOSTED_DEAL_STORY.value
-              : rng.intBetween(12, 180) * 1_000;
+              : isMessyAnchorDeal
+                ? MESSY_ANCHOR_DEAL_STORY.value
+                : rng.intBetween(12, 180) * 1_000;
     const daysUntilSimulationEnd = Math.max(1, daysBetween(createdAt, endDate));
     const earliestCloseOffset = Math.min(24, daysUntilSimulationEnd);
     const latestCloseOffset = Math.max(earliestCloseOffset, Math.min(130, daysUntilSimulationEnd));
@@ -2530,7 +2994,30 @@ function generateDeals(
             ? `${organization.name} - ${COMMITTEE_DEAL_STORY.title}`
             : isGhostedDeal
               ? `${organization.name} - ${GHOSTED_DEAL_STORY.title}`
-              : `${organization.name} - ${rng.choice(["DataHub rollout", "CRM intelligence", "sales analytics", "pipeline audit"])}`;
+              : isMessyAnchorDeal
+                ? `${organization.name} - ${MESSY_ANCHOR_DEAL_STORY.title}`
+                : `${organization.name} - ${rng.choice([
+                    "DataHub rollout",
+                    "CRM intelligence",
+                    "sales analytics",
+                    "pipeline audit",
+                    "forecast workflow",
+                    "deal-risk monitoring",
+                    "stale-deal alerts",
+                    "rep coaching insights",
+                    "win-rate analytics",
+                    "lead scoring upgrade",
+                    "RevOps automation",
+                    "GTM telemetry",
+                    "revenue intelligence",
+                    "sales motion review",
+                    "pipeline hygiene rollout",
+                    "forecast confidence pilot",
+                    "deal velocity tracking",
+                    "sales activity capture",
+                    "stalled-deal detection",
+                    "next-best-action workflow",
+                  ])}`;
     const deal: MutableDeal = {
       id: id("deal", index + 1),
       createdAt,
@@ -2545,7 +3032,7 @@ function generateDeals(
       status,
       value: baseValue,
       currency: scenario.defaults.currency,
-      expectedCloseDate: rng.bool(scenario.messiness.missingCloseDateRate) ? undefined : addDays(createdAt, rng.intBetween(45, 145)),
+      expectedCloseDate: forceMissingCloseDate || rng.bool(scenario.messiness.missingCloseDateRate) ? undefined : addDays(createdAt, rng.intBetween(45, 145)),
       wonTime: status === "WON" ? closedAt : undefined,
       lostTime: status === "LOST" ? closedAt : undefined,
       lostReason: status === "LOST" ? rng.choice(LOST_REASONS) : undefined,
@@ -2569,7 +3056,9 @@ function generateDeals(
                 ? COMMITTEE_DEAL_STORY.need
                 : isGhostedDeal
                   ? GHOSTED_DEAL_STORY.need
-                  : rng.choice(NEEDS),
+                  : isMessyAnchorDeal
+                    ? MESSY_ANCHOR_DEAL_STORY.need
+                    : rng.choice(NEEDS),
         urgencyReason: isExpansionPilotDeal
           ? EXPANSION_PILOT_DEAL.urgencyReason
           : isExpansionExpansionDeal
@@ -2578,7 +3067,9 @@ function generateDeals(
               ? COMMITTEE_DEAL_STORY.urgencyReason
               : isGhostedDeal
                 ? GHOSTED_DEAL_STORY.urgencyReason
-                : rng.choice(["board reporting pressure", "new quarter planning", "missed forecast review", "recent campaign spike"]),
+                : isMessyAnchorDeal
+                  ? MESSY_ANCHOR_DEAL_STORY.urgencyReason
+                  : rng.choice(["board reporting pressure", "new quarter planning", "missed forecast review", "recent campaign spike"]),
         knownObjections: scenario.id === "single-organization-deal-lab"
           ? focusedObjections[index] ?? pickMany(rng, ["budget", "implementation time", "CRM data quality", "security review", "change management"], rng.intBetween(1, 3))
           : isExpansionPilotDeal
@@ -2589,7 +3080,9 @@ function generateDeals(
                 ? [...COMMITTEE_DEAL_STORY.knownObjections]
                 : isGhostedDeal
                   ? [...GHOSTED_DEAL_STORY.knownObjections]
-                  : pickMany(rng, ["budget", "implementation time", "CRM data quality", "security review", "change management"], rng.intBetween(1, 3)),
+                  : isMessyAnchorDeal
+                    ? [...MESSY_ANCHOR_DEAL_STORY.knownObjections]
+                    : pickMany(rng, ["budget", "implementation time", "CRM data quality", "security review", "change management"], rng.intBetween(1, 3)),
         winCondition: scenario.id === "single-organization-deal-lab"
           ? focusedWinConditions[index] ?? rng.choice(["executive sponsor confirms value", "RevOps validates pipeline report", "pilot proves stale-deal detection"])
           : isExpansionPilotDeal
@@ -2600,11 +3093,13 @@ function generateDeals(
                 ? COMMITTEE_DEAL_STORY.winCondition
                 : isGhostedDeal
                   ? GHOSTED_DEAL_STORY.winCondition
-                  : rng.choice(["executive sponsor confirms value", "RevOps validates pipeline report", "pilot proves stale-deal detection"]),
+                  : isMessyAnchorDeal
+                    ? MESSY_ANCHOR_DEAL_STORY.winCondition
+                    : rng.choice(["executive sponsor confirms value", "RevOps validates pipeline report", "pilot proves stale-deal detection"]),
         valueExpansionReason: isExpansionExpansionDeal
           ? `Pilot (deal_001) closed for ${EXPANSION_PILOT_DEAL.value.toLocaleString()} EUR proving stale-deal detection inside one sales team. This opportunity is the full-org rollout that follows: ${EXPANSION_EXPANSION_DEAL.value.toLocaleString()} EUR across the remaining reps and managers.`
           : sourceLead && Math.abs(baseValue - (sourceLead.value ?? 0)) >= 10_000
-            ? valueExpansionReasonForDeal(index, sourceLead.value, baseValue)
+            ? valueExpansionReasonForDeal(index, sourceLead.value, baseValue, organization, scenario.id)
             : undefined,
         riskFactors: isExpansionPilotDeal
           ? [...EXPANSION_PILOT_DEAL.riskFactors]
@@ -2614,16 +3109,20 @@ function generateDeals(
               ? [...COMMITTEE_DEAL_STORY.riskFactors]
               : isGhostedDeal
                 ? [...GHOSTED_DEAL_STORY.riskFactors]
-                : isForcedCold || isForcedStalled
-                  ? ["low recent activity", "optimistic close date"]
-                  : pickMany(rng, ["stakeholder alignment", "budget timing", "data quality"], 2),
+                : isMessyAnchorDeal
+                  ? [...MESSY_ANCHOR_DEAL_STORY.riskFactors]
+                  : isForcedCold || isForcedStalled
+                    ? ["low recent activity", "optimistic close date"]
+                    : pickMany(rng, ["stakeholder alignment", "budget timing", "data quality"], 2),
         decisionProcess: isExpansionExpansionDeal
           ? `${organization.story.buyingStyle} evaluation following a successful pilot. ${contact.name} (${contact.role}) is sponsoring the rollout decision; ${organization.story.decisionPressure}. The committee is the same as the pilot - they already know the product and are now evaluating scope, not fit.`
           : isCommitteeDeal
             ? `Committee-driven evaluation. ${contact.name} (${contact.role}) is the executive sponsor. ${capitalizeSentence(organization.story.buyingTrigger)}. The champion and RevOps are pushing for a decision, but ${organization.story.decisionPressure} - finance and security have flagged unresolved review items and the deal is sitting in Negotiation past the original close date.`
             : isGhostedDeal
               ? `Champion-led evaluation that lost momentum. ${contact.name} (${contact.role}) drove the early conversation and brought strong engagement, but ${organization.story.decisionPressure}. The close date in CRM is still optimistic, but no real next step has been confirmed for weeks - this is the high-value opportunity that the CRO wants visibility on.`
-              : `${organization.story.buyingStyle} evaluation driven by ${organization.story.buyingTrigger}; ${organization.story.decisionPressure}. ${contact.name} is the ${stakeholderLabel(contact.committeeRole).toLowerCase()} and is focused on ${joinHuman(contact.priorities)}.`,
+              : isMessyAnchorDeal
+                ? `Champion-led evaluation with visible CRM hygiene problems. ${contact.name} (${contact.role}) is sponsoring the pilot, but ${organization.story.decisionPressure}. The contact list itself has duplicates, multiple records are missing emails/phones, and the close date on this very deal was not set - reflecting the broader pattern.`
+                : `${organization.story.buyingStyle} evaluation driven by ${organization.story.buyingTrigger}; ${organization.story.decisionPressure}. ${contact.name} is the ${stakeholderLabel(contact.committeeRole).toLowerCase()} and is focused on ${joinHuman(contact.priorities)}.`,
         stakeholders: dealStakeholderRoles(contact, organizationContacts),
         sentimentArc: [],
       },
@@ -2690,6 +3189,7 @@ function interpolateBuyerState(rng: Rng, start: BuyerState, target: BuyerState, 
 
 function sentimentTrigger(
   activityType: ActivityType,
+  moment: ActivityMoment,
   deal: Deal,
   contact: Contact,
   state: BuyerState,
@@ -2697,25 +3197,243 @@ function sentimentTrigger(
   step: number,
   total: number,
 ): string {
-  if (!done) return "rep scheduled a next step, but the buyer has not responded yet";
-  if (step === 1) return `${contact.name} confirmed that the priority around ${contact.priorities[0]} matters enough to explore`;
-  if (step === 2) return `${contact.name} asked how this would work inside their current sales process`;
-  if (step <= Math.ceil(total * 0.45)) return `${contact.name} wanted to see whether their current CRM data was clean enough for a useful pilot`;
-  if (step <= Math.ceil(total * 0.65)) return `${contact.name} asked what setup effort the team would need before the board update`;
-  if (step >= total - 1 && deal.status === "WON") return `${contact.name} agreed the win condition was met: ${deal.story.winCondition}`;
-  if (step >= total - 1 && deal.status === "LOST") return `${contact.name} could not get past ${deal.story.knownObjections[0]}`;
-  if (step >= total - 1 && deal.status === "OPEN" && state.friction >= 55) return `${contact.name} still liked the need, but ${deal.story.knownObjections[0]} kept the deal from moving`;
-  if (activityType === "meeting" && state.sentiment >= 0.25) return `${contact.name} saw a credible path to ${deal.story.winCondition}`;
-  if (activityType === "meeting" && state.friction >= 60) return `${contact.name} brought up ${deal.story.knownObjections[0]} during the meeting`;
-  if (activityType === "call" && contact.personality === "time-poor") return `${contact.name} kept the call short and asked for only the business impact`;
-  if (activityType === "email" && state.engagement < 40) return `${contact.name} gave a thin reply after several follow-ups`;
-  if (activityType === "deadline") return "the expected close date forced a pipeline hygiene check";
-  if (contact.personality === "risk-averse") return `${contact.name} asked for proof before widening the evaluation`;
-  if (contact.personality === "enthusiastic") return `${contact.name} offered to pull another stakeholder into the conversation`;
-  if (contact.personality === "curious") return `${contact.name} asked how this would work inside their current sales process`;
-  if (contact.personality === "political") return `${contact.name} wanted to know who else needed to approve the pilot`;
-  if (contact.personality === "pragmatic") return `${contact.name} pushed for a practical next step tied to ${contact.priorities[0]}`;
-  return `${contact.name} kept the conversation focused on ${contact.priorities[0]}`;
+  // Deterministic pick within a variant pool, based on dealId + step + contact.
+  const hashSeed = numericIdPart(deal.id) + step * 13 + numericIdPart(contact.id) * 7;
+  const pick = <T>(pool: readonly T[]): T => pool[hashSeed % pool.length];
+  const name = contact.name;
+  const priority = contact.priorities[0];
+  const objection = deal.story.knownObjections[0];
+
+  if (!done) {
+    return pick([
+      "rep scheduled a next step, but the buyer has not responded yet",
+      "the next-step ask sat unread for several days",
+      "follow-up was scheduled but the buyer never confirmed the slot",
+      "rep waited on a reply that never came back",
+      "the proposed next step went silent on the buyer side",
+      "rep pushed for confirmation but the inbox stayed quiet",
+    ]);
+  }
+
+  // First conversation - more openings
+  if (step === 1) {
+    return pick([
+      `${name} confirmed that the priority around ${priority} matters enough to explore`,
+      `${name} agreed the pain on ${priority} was real and worth a follow-up conversation`,
+      `${name} validated the ${priority} hypothesis and asked for a more concrete next step`,
+      `${name} acknowledged the timing on ${priority} and opened the door to a structured evaluation`,
+      `${name} framed the conversation around ${priority} from the first call`,
+      `${name} accepted the pitch on ${priority} but stayed cautious about scope`,
+    ]);
+  }
+
+  // Win conditions met
+  if (step >= total - 1 && deal.status === "WON") {
+    return pick([
+      `${name} agreed the win condition was met: ${deal.story.winCondition}`,
+      `${name} signed off after the pilot showed ${deal.story.winCondition}`,
+      `${name} confirmed the proof point landed - ${deal.story.winCondition}`,
+      `${name} accepted the close framing with ${deal.story.winCondition} as the anchor`,
+      `${name} approved the close after the pilot demonstrated ${deal.story.winCondition}`,
+    ]);
+  }
+  if (step >= total - 1 && deal.status === "LOST") {
+    return pick([
+      `${name} could not get past ${objection}`,
+      `${name} closed the loop - ${objection} was the deciding factor`,
+      `${name} walked away citing ${objection} as the blocker`,
+      `${name} confirmed the no, with ${objection} as the primary reason`,
+      `${name} ended the conversation - ${objection} stayed unresolved`,
+    ]);
+  }
+  if (step >= total - 1 && deal.status === "OPEN" && state.friction >= 55) {
+    return pick([
+      `${name} still liked the need, but ${objection} kept the deal from moving`,
+      `${name} stayed warm on the need but ${objection} held up the next step`,
+      `${name} confirmed interest but ${objection} kept the conversation in a holding pattern`,
+      `${name} acknowledged the value but couldn't move past ${objection}`,
+      `${name} kept the door open but ${objection} blocked any next step`,
+    ]);
+  }
+
+  // Moment-driven variants - these are the bulk of mid-deal triggers
+  if (moment === "process_mapping") {
+    return pick([
+      `${name} walked through the team's current motion and flagged ${priority} as the biggest gap`,
+      `${name} mapped the existing workflow and confirmed the pilot could slot in without behavior change`,
+      `${name} described how the team works today and pointed at ${priority} as the friction`,
+      `${name} took the rep through their cadence and asked how the pilot would fit`,
+      `${name} ran through the current process and identified ${priority} as the wedge`,
+      `${name} explained the existing rhythm and the rep mapped pilot scope against it`,
+    ]);
+  }
+  if (moment === "data_quality_review") {
+    return pick([
+      `${name} pushed on whether the CRM data was clean enough for a useful pilot`,
+      `${name} questioned how the pilot would handle the messy segments of the CRM`,
+      `${name} asked to see field-completeness samples before agreeing to the pilot`,
+      `${name} raised data hygiene as the deciding factor and asked for a clear scope`,
+      `${name} pressed on the difference between pilot signal and cleanup work`,
+      `${name} requested examples of what the system flags when half the fields are blank`,
+    ]);
+  }
+  if (moment === "pilot_scope") {
+    return pick([
+      `${name} pushed to keep the pilot scope tight and avoid rollout-tier debates`,
+      `${name} asked the rep to narrow the pilot to one measurable proof point`,
+      `${name} confirmed pilot scope was acceptable if it didn't expand without sign-off`,
+      `${name} negotiated the pilot down to the minimum viable proof of ${deal.story.winCondition}`,
+      `${name} signed off on pilot framing but asked to defer scope debates to post-pilot`,
+      `${name} wanted the pilot small enough that internal review couldn't push back`,
+    ]);
+  }
+  if (moment === "finance_review") {
+    return pick([
+      `${name} asked finance to weigh in on whether the pilot tied cleanly to revenue impact`,
+      `${name} pulled on rollout cost ceiling before agreeing to the pilot scope`,
+      `${name} wanted a single-page value case before involving the CFO`,
+      `${name} asked how the pilot reads in EUR rather than as a reporting upgrade`,
+      `${name} questioned whether finance would approve without revenue-at-risk math`,
+      `${name} flagged budget timing as the determining factor on rollout pacing`,
+    ]);
+  }
+  if (moment === "security_review") {
+    return pick([
+      `${name} pulled in security review and asked for a pilot-scoped checklist`,
+      `${name} questioned data-access boundaries and asked for an explicit dataflow`,
+      `${name} confirmed the pilot footprint was acceptable but flagged rollout audit work`,
+      `${name} wanted infosec involved from week one of any rollout, not later`,
+      `${name} asked which records the system actually sees during pilot phase`,
+      `${name} agreed to pilot security scope only if rollout review stayed separate`,
+    ]);
+  }
+  if (moment === "pilot_success") {
+    return pick([
+      `${name} read the pilot results and agreed the proof point held`,
+      `${name} accepted the pilot evidence and started shaping the close path`,
+      `${name} confirmed the pilot delivered what was promised on ${deal.story.winCondition}`,
+      `${name} circulated the pilot read-out internally and got the sponsor's nod`,
+      `${name} bought into the pilot results and asked about rollout timing`,
+      `${name} validated the pilot evidence and moved the conversation to commercial`,
+    ]);
+  }
+  if (moment === "close_confirmation") {
+    return pick([
+      `${name} confirmed the close on the agreed pilot scope without reopening earlier debates`,
+      `${name} signed off on the close path with ${deal.story.winCondition} as the anchor`,
+      `${name} approved the close terms and asked about implementation rhythm`,
+      `${name} kept scope discipline through the close call`,
+      `${name} closed the conversation cleanly - pilot scope held`,
+    ]);
+  }
+  if (moment === "loss_review") {
+    return pick([
+      `${name} closed the loop respectfully - ${objection} was the unresolved blocker`,
+      `${name} confirmed the no, citing ${objection}, but kept the file warm`,
+      `${name} marked the deal lost on ${objection} and asked the rep to re-engage later`,
+      `${name} ended the cycle on ${objection} but left the door open for next year`,
+    ]);
+  }
+  if (moment === "ghosting_nudge") {
+    return pick([
+      `${name} did not reply to the most recent follow-up`,
+      `${name} acknowledged the nudge but did not commit to a next step`,
+      `${name} sent a thin reply after multiple follow-ups`,
+      `${name} apologized for the silence but couldn't give a real status update`,
+      `${name} indicated the deal was paused on their side without a clear restart trigger`,
+      `${name} hinted that internal priorities had shifted away from this work`,
+    ]);
+  }
+
+  // Mid-deal sentiment-driven variants (when no specific moment matched)
+  if (activityType === "meeting" && state.sentiment >= 0.25) {
+    return pick([
+      `${name} saw a credible path to ${deal.story.winCondition}`,
+      `${name} left the meeting visibly more confident about the pilot`,
+      `${name} agreed the next step felt achievable inside their constraints`,
+      `${name} sounded engaged and pulled the conversation deeper into specifics`,
+    ]);
+  }
+  if (activityType === "meeting" && state.friction >= 60) {
+    return pick([
+      `${name} brought up ${objection} during the meeting`,
+      `${name} surfaced ${objection} as a serious blocker mid-meeting`,
+      `${name} pushed back on the rep's framing and flagged ${objection}`,
+      `${name} left the meeting still uncertain because of ${objection}`,
+    ]);
+  }
+  if (activityType === "call" && contact.personality === "time-poor") {
+    return pick([
+      `${name} kept the call short and asked for only the business impact`,
+      `${name} truncated the call - wanted bullet points, not narrative`,
+      `${name} cut the meeting to 15 minutes and asked for the EUR math first`,
+      `${name} took the call between other things and asked the rep to send a summary`,
+    ]);
+  }
+  if (activityType === "email" && state.engagement < 40) {
+    return pick([
+      `${name} gave a thin reply after several follow-ups`,
+      `${name} replied late with a single line and no clear next step`,
+      `${name} acknowledged the email but didn't open the substance`,
+      `${name} sent a polite-but-vague response that didn't move the deal`,
+    ]);
+  }
+  if (activityType === "deadline") {
+    return pick([
+      "the expected close date forced a pipeline hygiene check",
+      "rep ran the close-date review and re-asked for sponsor commitment",
+      "deadline cycle pulled the deal back into the rep's weekly forecast call",
+      "close-date check forced a pause on optimism and a re-stating of the scope",
+    ]);
+  }
+
+  // Personality-driven fallbacks
+  if (contact.personality === "risk-averse") {
+    return pick([
+      `${name} asked for proof before widening the evaluation`,
+      `${name} pushed for a smaller next step until the risk side was clearer`,
+      `${name} asked for case studies before committing more time`,
+      `${name} requested references from similar accounts`,
+    ]);
+  }
+  if (contact.personality === "enthusiastic") {
+    return pick([
+      `${name} offered to pull another stakeholder into the conversation`,
+      `${name} volunteered to help frame the internal pitch`,
+      `${name} proactively shared the conversation with adjacent teams`,
+      `${name} introduced the rep to two other interested colleagues`,
+    ]);
+  }
+  if (contact.personality === "curious") {
+    return pick([
+      `${name} asked how this would work inside their current sales process`,
+      `${name} asked unexpected questions about how the product behaves under edge cases`,
+      `${name} probed into the data model and asked about extensibility`,
+      `${name} dug into the integration surface and asked what's hardest to set up`,
+    ]);
+  }
+  if (contact.personality === "political") {
+    return pick([
+      `${name} wanted to know who else needed to approve the pilot`,
+      `${name} mapped the internal stakeholders before agreeing to any next step`,
+      `${name} asked the rep to wait until the right approvers were in the room`,
+      `${name} sequenced the next conversations based on who needed to be on board first`,
+    ]);
+  }
+  if (contact.personality === "pragmatic") {
+    return pick([
+      `${name} pushed for a practical next step tied to ${priority}`,
+      `${name} asked for the shortest path between today and a real proof point`,
+      `${name} wanted a concrete deliverable, not a roadmap`,
+      `${name} traded scope for speed and asked the rep to keep the next step tight`,
+    ]);
+  }
+  return pick([
+    `${name} kept the conversation focused on ${priority}`,
+    `${name} steered the discussion back to ${priority} when it drifted`,
+    `${name} stayed anchored on ${priority} as the question that mattered`,
+    `${name} re-framed each topic against the ${priority} priority`,
+  ]);
 }
 
 function dealStakeholders(primaryContact: Contact, organizationContacts: Contact[], dueDate: string): Contact[] {
@@ -2804,18 +3522,29 @@ function momentForActivity(
 ): ActivityMoment {
   const progress = step / total;
 
-  if (!done) return "ghosting_nudge";
+  // Position-based moments for the buyer-journey phases. These run BEFORE the
+  // ghosting_nudge shortcut so an early not-done activity (rep scheduled but buyer
+  // hasn't confirmed yet) gets the right phase label rather than being mislabeled
+  // as a ghosting nudge.
+  // The deadline-type short-circuit is gated to early phases so a deadline near
+  // deal end doesn't override the close/ghost moments.
   if (progress <= 0.15) return "discovery";
   if (progress <= 0.3) return "process_mapping";
-  if (activityType === "deadline") return "data_quality_review";
+  if (activityType === "deadline" && progress <= 0.5) return "data_quality_review";
   if (progress <= 0.48) return "data_quality_review";
   if (progress <= 0.62) return contact.influence === "economic-buyer" ? "finance_review" : "pilot_scope";
   if (progress <= 0.78) {
     if (deal.story.knownObjections.some((objection) => objection.includes("security"))) return "security_review";
     return contact.influence === "economic-buyer" ? "finance_review" : "pilot_scope";
   }
+
+  // Late phase: closure moments for WON/LOST deals
   if (deal.status === "WON") return step === total ? "close_confirmation" : "pilot_success";
   if (deal.status === "LOST") return step === total ? "loss_review" : "finance_review";
+
+  // Open deal, late phase: this is when ghosting_nudge makes sense - rep is chasing
+  // a non-responsive buyer late in the deal life. Also where a not-done late activity
+  // legitimately indicates the buyer went silent.
   return "ghosting_nudge";
 }
 
@@ -2922,7 +3651,7 @@ function generateActivities(
       const draft = drafts[i];
       const activityIndex = activities.length + 1;
       const buyerState = interpolateBuyerState(rng, startingBuyerState, targetBuyerState, i + 1, drafts.length);
-      const trigger = sentimentTrigger(draft.type, deal, draft.contact, buyerState, draft.done, i + 1, drafts.length);
+      const trigger = sentimentTrigger(draft.type, draft.moment, deal, draft.contact, buyerState, draft.done, i + 1, drafts.length);
       const nextStepDate = drafts.slice(i + 1).find((item) => item.dueDate > draft.dueDate)?.dueDate;
       deal.story.sentimentArc.push({
         occurredAt: draft.dueDate,

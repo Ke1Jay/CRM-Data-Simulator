@@ -334,6 +334,134 @@ function validateScenarioPremise(world: GeneratedWorld): ValidationIssue[] {
     }
   }
 
+  if (scenarioId === "messy-crm-hygiene-account") {
+    // Premise: this scenario must visibly show CRM hygiene problems. We assert four
+    // structural patterns so the premise is enforced regardless of seed drift:
+    //   (a) at least one organization with crmHygiene = "messy"
+    //   (b) at least one pair of contacts in the messy org that share a first name
+    //       (the duplicate-like pattern)
+    //   (c) >= 25% of deals have no expectedCloseDate
+    //   (d) >= 3 notes with a vague short body (length < 30 chars)
+    const messyOrgs = world.organizations.filter((org) => org.story.crmHygiene === "messy");
+    if (messyOrgs.length === 0) {
+      issues.push({
+        severity: "fatal",
+        code: "messy_premise_no_messy_org",
+        message: `Scenario ${scenarioId} requires at least one organization with crmHygiene="messy", but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    // (b) duplicate-like first-name pattern in at least one messy org.
+    let foundDuplicateFirstNamePair = false;
+    for (const org of messyOrgs) {
+      const orgContacts = world.contacts.filter((c) => c.organizationId === org.id);
+      const firstNameCounts = new Map<string, number>();
+      for (const contact of orgContacts) {
+        const firstName = contact.name.split(/\s+/)[0]?.replace(/\.$/, "").toLowerCase();
+        if (!firstName) continue;
+        firstNameCounts.set(firstName, (firstNameCounts.get(firstName) ?? 0) + 1);
+      }
+      for (const count of firstNameCounts.values()) {
+        if (count >= 2) {
+          foundDuplicateFirstNamePair = true;
+          break;
+        }
+      }
+      if (foundDuplicateFirstNamePair) break;
+    }
+    if (messyOrgs.length > 0 && !foundDuplicateFirstNamePair) {
+      issues.push({
+        severity: "fatal",
+        code: "messy_premise_no_duplicate_like_contacts",
+        message: `Scenario ${scenarioId} requires at least one messy organization with two or more contacts sharing a first name, but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    // (c) missing-close-date rate >= 25% of all deals.
+    const dealsWithoutClose = world.deals.filter((d) => !d.expectedCloseDate);
+    const missingRate = world.deals.length > 0 ? dealsWithoutClose.length / world.deals.length : 0;
+    if (missingRate < 0.25) {
+      issues.push({
+        severity: "fatal",
+        code: "messy_premise_missing_close_dates_too_low",
+        message: `Scenario ${scenarioId} requires >= 25% of deals to have no expectedCloseDate, but only ${(missingRate * 100).toFixed(1)}% do`,
+        entityType: "scenario",
+      });
+    }
+
+    // (d) >= 3 vague short notes (length < 30 chars).
+    const shortNotes = world.notes.filter((n) => n.body.length < 30);
+    if (shortNotes.length < 3) {
+      issues.push({
+        severity: "fatal",
+        code: "messy_premise_too_few_vague_notes",
+        message: `Scenario ${scenarioId} requires at least 3 short/vague notes (body length < 30 chars), but only ${shortNotes.length} were found`,
+        entityType: "scenario",
+      });
+    }
+  }
+
+  if (scenarioId === "stale-pipeline-hidden-risk") {
+    // Premise: the pipeline LOOKS healthy at a glance, but a meaningful chunk of high-value
+    // deals are quietly cold. The scenario name says "hidden risk in the pile". We assert
+    // three structural patterns:
+    //   (a) >= 3 cold deals with value >= 100,000 EUR (the hidden high-value risk)
+    //   (b) >= 1 cold deal in a late stage (Negotiation or Closing) - late-funnel cold
+    //       deals are what make the forecast misleading
+    //   (c) >= 20% of total open-pipeline EUR is concentrated in cold deals - the forecast
+    //       looks bigger than it really is
+    // Cold designation: OPEN deal whose lastActivityDate (or createdAt fallback) is more
+    // than 30 days before simulation end. This mirrors the truth.coldDealIds computation
+    // in the simulator so validators stay self-contained.
+    const DAY_MS = 86_400_000;
+    const coldCutoff = new Date(new Date(world.metadata.simulationEnd).getTime() - 30 * DAY_MS).toISOString();
+    const coldDeals = world.deals.filter(
+      (d) => d.status === "OPEN" && (d.lastActivityDate ?? d.createdAt) <= coldCutoff,
+    );
+    const coldDealIds = new Set(coldDeals.map((d) => d.id));
+    const stageOrderById = new Map(world.stages.map((s) => [s.id, s.order]));
+
+    // (a) high-value cold deals
+    const highValueColdDeals = coldDeals.filter((d) => (d.value ?? 0) >= 100_000);
+    if (highValueColdDeals.length < 3) {
+      issues.push({
+        severity: "fatal",
+        code: "stale_premise_too_few_high_value_cold",
+        message: `Scenario ${scenarioId} requires >= 3 cold deals with value >= 100,000 EUR, but only ${highValueColdDeals.length} were found`,
+        entityType: "scenario",
+      });
+    }
+
+    // (b) late-stage cold deal (order >= 3 = Negotiation or Closing)
+    const lateStageColdDeals = coldDeals.filter((d) => (stageOrderById.get(d.stageId) ?? 0) >= 3);
+    if (lateStageColdDeals.length < 1) {
+      issues.push({
+        severity: "fatal",
+        code: "stale_premise_no_late_stage_cold_deal",
+        message: `Scenario ${scenarioId} requires at least one cold deal in a late stage (Negotiation or Closing), but none was found`,
+        entityType: "scenario",
+      });
+    }
+
+    // (c) >= 20% of open-pipeline EUR concentrated in cold deals
+    const openDeals = world.deals.filter((d) => d.status === "OPEN");
+    const openPipelineValue = openDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
+    const coldOpenValue = openDeals
+      .filter((d) => coldDealIds.has(d.id))
+      .reduce((sum, d) => sum + (d.value ?? 0), 0);
+    const coldShare = openPipelineValue > 0 ? coldOpenValue / openPipelineValue : 0;
+    if (coldShare < 0.2) {
+      issues.push({
+        severity: "fatal",
+        code: "stale_premise_cold_pipeline_share_too_low",
+        message: `Scenario ${scenarioId} requires >= 20% of open-pipeline EUR to be in cold deals, but only ${(coldShare * 100).toFixed(1)}% is (cold open value: ${coldOpenValue} of ${openPipelineValue})`,
+        entityType: "scenario",
+      });
+    }
+  }
+
   if (scenarioId === "expansion-after-won-pilot") {
     // Premise: at least one organization must have BOTH a WON deal AND an OPEN deal
     // (the expansion deal lives in the same account as the won pilot).
